@@ -130,32 +130,47 @@ int enable_chat_server(int connfd) // server address , port , the number of clie
     
    
    char buffer[MAX]; 
+   char bufferTx[MAX];
+   char bufferRx[MAX];
+   
+   memset(bufferRx,0,sizeof(bufferRx));
+   memset(bufferTx,0,sizeof(bufferTx));
+
    int var = 0;
    
    printf("클라이언트와 채팅을 시작합니다.\n"); 
+   getchar(); 
 
    while (1)
    {
       
      // bzero(buffer,sizeof(buffer));
-      memset(buffer,0,sizeof(buffer));
-      printf("\nWait Server...\n");
-      read(connfd, buffer, sizeof(buffer));
-      printf("\nFrom Client : %s\n",buffer);
+     
+      
+      
+      memset(bufferRx,0,sizeof(bufferRx));
+    //  fflush(stdin);
+     // fflush(stdout);
+      read(connfd, bufferRx, sizeof(bufferRx));
+      printf("From Client : %s",bufferRx);
     
      // bzero(buffer,sizeof(buffer));
-       memset(buffer,0,sizeof(buffer));
-      printf("\nTo Client : ");  scanf("%s",buffer);
-  
- 
-      write(connfd,buffer,sizeof(buffer));  
+       memset(bufferTx,0,sizeof(bufferTx));
+       var = 0;
+       printf("To Client : "); 
+       while((bufferTx[var++] = getchar()) != '\n'); 
+     //  bufferTx[strlen(bufferTx) - 1] = '\0';
+     //  fflush(stdin);
+      // fflush(stdout);
+       write(connfd,bufferTx,sizeof(bufferTx));  
       
 
 
-      if( strncmp("quit", buffer, 4) == 0)
+      if( strncmp("quit", bufferRx, 4) == 0 || strncmp("quit",bufferTx,4) == 0)
       {
          printf("Quit Chatting...\n");
-         bzero(buffer,sizeof(buffer));
+         memset(bufferRx,0,sizeof(bufferRx));
+         memset(bufferTx,0,sizeof(bufferTx));
          return -1; 
          
       }

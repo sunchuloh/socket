@@ -61,32 +61,43 @@ int enable_chat_client(int sockfd)
 {
 
   char buffer[MAX];
-  int var; 
+
+  char bufferTx[MAX];
+  char bufferRx[MAX]; 
+
+  memset(bufferTx,0,sizeof(bufferTx));
+  memset(bufferRx,0,sizeof(bufferRx));
+
+  int var = 0; 
 
 
   printf("서버와 채팅이 활성화 하였습니다.\n");
+  getchar(); 
   while (1)
   {
 
    
     
     
-    
-   // bzero(buffer, sizeof(buffer));
-     memset(buffer,0,sizeof(buffer));
-     printf("\nTo Server : "); scanf("%s",buffer);
-   
-     write(sockfd, buffer, sizeof(buffer));
-    //bzero(buffer,sizeof(buffer));
-     memset(buffer,0,sizeof(buffer));
-     printf("\nWait Client...\n");
-    
-    read(sockfd,buffer,sizeof(buffer));
-    printf("\nFrom Client : %s\n",buffer); 
+      printf("To Server : ");
+       memset(bufferTx,0,sizeof(bufferTx));
+      var = 0; 
+      // getchar(); 
+      while((bufferTx[var++] = getchar()) != '\n'); 
+     //  bufferTx[strlen(bufferTx) - 1] = '\0';
+     // getchar();
+     // fflush(stdin);
+     // fflush(stdout);
+      write(sockfd, bufferTx, sizeof(bufferTx));
+      memset(bufferRx,0,sizeof(bufferRx)); 
+     // fflush(stdin);
+     // fflush(stdout);
+      read(sockfd,bufferRx,sizeof(bufferRx));
+      printf("\nFrom Server : %s",bufferRx); 
     
       
    
-    if (strncmp("quit", buffer, 4) == 0)
+    if (strncmp("quit", bufferRx, 4) == 0 || strncmp("quit",bufferTx,4) == 0 )
     {
       printf("Quits Chatting...\n");
       break;
