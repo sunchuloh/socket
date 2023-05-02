@@ -6,5 +6,11 @@ This Simple Chat Program is Desgined on Ubuntu18.04 in C. Designer is OH SUN CHU
 
 현재 Client에서 quit명령을 오더해야 프로그램이 정상적으로 종료되도록 재작하였습니다.
 
-그 외 'Ctrl+Z'등으로 비정상적으로 종료시 ps -ef로 ./server와 ./client의 PID를 확인 후 kill해주셔야 다시 실행했을 때 재동작합니다.
+Ctrl+Z'등으로 비정상적으로 종료시 ps -ef로 ./server와 ./client의 PID를 확인 후 kill해주셔야 다시 실행했을 때 재동작합니다.
+
+Client에서 IP입력하실 때 "192.168.0.2"등으로 IPv4 주소 규격에 맞게 정확하게 입력해주세요.
+
+
+
+
 
