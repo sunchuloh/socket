@@ -11,6 +11,13 @@ Ctrl+Z'등으로 비정상적으로 종료시 ps -ef로 ./server와 ./client의 
 Client에서 IP입력하실 때 "192.168.0.2"등으로 IPv4 주소 규격에 맞게 정확하게 입력해주세요.
 
 
+   <table>
+  <tr>
+    <td><img alt="" img width = "1000" img height = "500" src="https://user-images.githubusercontent.com/78036441/235621774-8ba39bb1-62a6-4ab1-bc97-f7a6112b7051.png" /></td>
+  
+  </tr>
+</table>
+
 
 
 
