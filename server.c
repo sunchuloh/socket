@@ -137,15 +137,24 @@ int enable_chat_server(int connfd) // server address , port , the number of clie
    while (1)
    {
       
-      bzero(buffer,sizeof(buffer));
+     // bzero(buffer,sizeof(buffer));
+      memset(buffer,0,sizeof(buffer));
+      printf("\nWait Server...\n");
       read(connfd, buffer, sizeof(buffer));
-      printf("From Client : %s\n",buffer);
+      printf("\nFrom Client : %s\n",buffer);
+    
+     // bzero(buffer,sizeof(buffer));
+       memset(buffer,0,sizeof(buffer));
+      printf("\nTo Client : ");  scanf("%s",buffer);
+  
+ 
+      write(connfd,buffer,sizeof(buffer));  
       
 
 
       if( strncmp("quit", buffer, 4) == 0)
       {
-         printf("Client Quits Chat...\n");
+         printf("Quit Chatting...\n");
          bzero(buffer,sizeof(buffer));
          return -1; 
          

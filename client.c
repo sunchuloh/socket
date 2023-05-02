@@ -69,17 +69,26 @@ int enable_chat_client(int sockfd)
   {
 
    
-    bzero(buffer, sizeof(buffer));
-    var = 0;
-    printf("To Server : "); scanf("%s",buffer); 
-   
-    // while ((buffer[var++] = getchar()) != '\n');
-    // buffer[strlen(buffer) - 1] = '\0';
     
-    write(sockfd, buffer, sizeof(buffer));
+    
+    
+   // bzero(buffer, sizeof(buffer));
+     memset(buffer,0,sizeof(buffer));
+     printf("\nTo Server : "); scanf("%s",buffer);
+   
+     write(sockfd, buffer, sizeof(buffer));
+    //bzero(buffer,sizeof(buffer));
+     memset(buffer,0,sizeof(buffer));
+     printf("\nWait Client...\n");
+    
+    read(sockfd,buffer,sizeof(buffer));
+    printf("\nFrom Client : %s\n",buffer); 
+    
+      
+   
     if (strncmp("quit", buffer, 4) == 0)
     {
-      printf("Quit Chat...\n");
+      printf("Quits Chatting...\n");
       break;
     }
  
