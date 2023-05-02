@@ -14,138 +14,111 @@
 #define TxBufferSize 1024
 #define RxBufferSize 1024
 
-
-
-
-int init_sock_client(char* address,int port)
+int init_sock_client(char *address, int port)
 {
-     
-    int sockfd; 
-    struct sockaddr_in addr_server;
 
-    
-    bzero(&addr_server,sizeof(addr_server)); 
-    addr_server.sin_family = AF_INET;
-    addr_server.sin_port = htons(port);
-    addr_server.sin_addr.s_addr = inet_addr(address);
+  int sockfd;
+  struct sockaddr_in addr_server;
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  bzero(&addr_server, sizeof(addr_server));
+  addr_server.sin_family = AF_INET;
+  addr_server.sin_port = htons(port);
+  addr_server.sin_addr.s_addr = inet_addr(address);
 
-     if( sockfd == -1 )
-     {
-        printf("소켓 생성에 실패하였습니다.\n");
-        printf("프로그램을 종료합니다.\n"); 
-        exit(0);
-     } 
-     else printf("소켓 생성에 성공하였습니다.\n");
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (connect(sockfd,(struct sockaddr *)&addr_server, sizeof(addr_server)) == 0) 
-    {
-      
-            printf("서버에 연결을 성공하였습니다.\n");
-            return sockfd;
-    }
-    else 
-    {
-      printf("서버에 연결을 실패하였습니다.\n");
-      printf("프로그램을 종료합니다.\n"); 
-      exit(0);
-    }
+  if (sockfd == -1)
+  {
+    printf("소켓 생성에 실패하였습니다.\n");
+    printf("프로그램을 종료합니다.\n");
+    exit(0);
+  }
+  else
+    printf("소켓 생성에 성공하였습니다.\n");
 
-    
+  if (connect(sockfd, (struct sockaddr *)&addr_server, sizeof(addr_server)) == 0)
+  {
 
-
-
+    printf("서버에 연결을 성공하였습니다.\n");
+    return sockfd;
+  }
+  else
+  {
+    printf("서버에 연결을 실패하였습니다.\n");
+    printf("프로그램을 종료합니다.\n");
+    exit(0);
+  }
 }
 int enable_chat_client(int sockfd)
 {
 
-  char buffer[MAX];
+      
 
-  char bufferTx[MAX];
-  char bufferRx[MAX]; 
+      char bufferTx[MAX];
+      char bufferRx[MAX];
 
-  memset(bufferTx,0,sizeof(bufferTx));
-  memset(bufferRx,0,sizeof(bufferRx));
+      memset(bufferTx, 0, sizeof(bufferTx));
+      memset(bufferRx, 0, sizeof(bufferRx));
 
-  int var = 0; 
+      int var = 0;
 
+      printf("서버와 채팅이 활성화 하였습니다.\n");
+      getchar();
+      while (1)
+      {
 
-  printf("서버와 채팅이 활성화 하였습니다.\n");
-  getchar(); 
-  while (1)
+        printf("To Server : ");
+        memset(bufferTx, 0, sizeof(bufferTx));
+        var = 0;
+
+        while ((bufferTx[var++] = getchar()) != '\n');
+
+        write(sockfd, bufferTx, sizeof(bufferTx));
+
+        if (strncmp("quit", bufferTx, 4) == 0)break;
+
+        memset(bufferRx, 0, sizeof(bufferRx));
+
+        read(sockfd, bufferRx, sizeof(bufferRx));
+        printf("From Server : %s", bufferRx);
+        if (strncmp("quit", bufferRx, 4) == 0)break;
+      }
+
+  return -1;
+}
+int do_chat_client(char *address, int port)
+{
+
+  int sockfd;
+  sockfd = init_sock_client(address, port);
+  if (enable_chat_client(sockfd) == -1)
   {
 
-   
-    
-    
-      printf("To Server : ");
-       memset(bufferTx,0,sizeof(bufferTx));
-      var = 0; 
-      // getchar(); 
-      while((bufferTx[var++] = getchar()) != '\n'); 
-     //  bufferTx[strlen(bufferTx) - 1] = '\0';
-     // getchar();
-     // fflush(stdin);
-     // fflush(stdout);
-      write(sockfd, bufferTx, sizeof(bufferTx));
-      memset(bufferRx,0,sizeof(bufferRx)); 
-     // fflush(stdin);
-     // fflush(stdout);
-      read(sockfd,bufferRx,sizeof(bufferRx));
-      printf("\nFrom Server : %s",bufferRx); 
-    
-      
-   
-    if (strncmp("quit", bufferRx, 4) == 0 || strncmp("quit",bufferTx,4) == 0 )
-    {
-      printf("Quits Chatting...\n");
-      break;
-    }
- 
+    close(sockfd);
+
+    return -1;
   }
-
-    return -1; 
-
-  
-}
-int do_chat_client(char* address,int port)
-{
-   
-       int sockfd; 
-       sockfd = init_sock_client(address,port); 
-       if(enable_chat_client(sockfd) == - 1) 
-       {
-        
-          close(sockfd); 
-          
-          return -1; 
-
-       }
-
-
 }
 int main(int argc, char **argv[])
-{  
-   
-   printf("클라이언트 프로그램입니다 ( 재작자 : 오선철 ).\n");
-   printf("Ubuntu-18.04환경에서 재작하였습니다.\n");
-   printf("쓰레드를 이용하여 동시 채팅 기능 구현 예정입니다...\n");
+{
 
-   int port;
-   char address[MAX];  
+  printf("클라이언트 프로그램입니다 ( 재작자 : 오선철 ).\n");
+  printf("Ubuntu-18.04환경에서 재작하였습니다.\n");
+  printf("쓰레드를 이용하여 동시 채팅 기능 구현 예정입니다...\n");
 
-   // setlocale(LC_ALL,"");
-   
-   
-   printf("Port : "); scanf("%d",&port);
-   printf("Address : "); scanf("%s",address);
-   // getchar();
-   
+  int port;
+  char address[MAX];
 
-   if( do_chat_client(address,port) == -1 ) printf("프로그램 종료되었습니다.\n");
+  // setlocale(LC_ALL,"");
 
-  
-    return 0;
+  printf("Port : ");
+  scanf("%d", &port);
+  printf("Address : ");
+  scanf("%s", address);
+  // getchar();
 
+  if (do_chat_client(address, port) == -1)
+    printf("프로그램 종료되었습니다.\n");
+
+  return 0;
 }

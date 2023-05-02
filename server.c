@@ -10,13 +10,10 @@
 #include <wchar.h>
 #include <locale.h>
 
-
 #define MAX 1024
 #define PORT 8080
 #define TxBufferSize 1024
 #define RxBufferSize 1024
-
-
 
 // servaddr.sin_family = AF_INET;
 // servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -33,205 +30,149 @@
 // -1 , 0 = listen(int sockfd, int backlog) ---> -1 is fail
 // int len_clientaddr = sizeof(clientaddr)
 // int confd = accpet(int sockfd , (struct sockaddr*)&client_addr, &len_clientaddr));
-// 
-
-
-
-
+//
 
 int init_sock_server(int port) // IP , Address , Clinet Num/
-{    
-
-        
-       
-       int sockfd;
-       struct sockaddr_in addr_server;
-
-       bzero(&addr_server,sizeof(addr_server));
-       addr_server.sin_family = AF_INET;
-       addr_server.sin_addr.s_addr =  htonl(INADDR_ANY);
-       addr_server.sin_port = htons(port); 
-
-       sockfd = socket(AF_INET, SOCK_STREAM, 0);
-       if( sockfd == -1 )
-       {
-        printf("소켓 생성에 실패하였습니다.\n");
-        exit(0);
-
-       } 
-       else printf("소켓 생성에 성공하였습니다.\n");
-           
-         
-       
-       if ( bind(sockfd, (struct sockaddr *)&addr_server, sizeof(addr_server)) == 0 )
-       {
-
-         printf("소켓 바인딩에 성공하였습니다.\n");
-         return sockfd; 
-
-       } 
-       else 
-       {
-         printf("소켓 바인딩에 실패하였습니다.\n");
-         exit(0); 
-              
-
-       }   
-      
-
-}
-int do_wait(int sockfd,int nClient) // client address.
 {
-  
-      int len;
-      int connfd;
-      struct sockaddr_in addr_client;
-      bzero(&addr_client,sizeof(addr_client));
-      if ( listen(sockfd,nClient) == -1 ) 
-      {
-         printf("클라이언트 리스닝에 실패하였습니다.\n");
-         exit(0); 
 
+   int sockfd;
+   struct sockaddr_in addr_server;
 
-      }
-      else 
-      {
+   bzero(&addr_server, sizeof(addr_server));
+   addr_server.sin_family = AF_INET;
+   addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
+   addr_server.sin_port = htons(port);
 
-         printf("클라이언트 리스닝에 성공하였습니다.\n"); 
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd == -1)
+   {
+      printf("소켓 생성에 실패하였습니다.\n");
+      exit(0);
+   }
+   else
+      printf("소켓 생성에 성공하였습니다.\n");
 
+   if (bind(sockfd, (struct sockaddr *)&addr_server, sizeof(addr_server)) == 0)
+   {
 
-      }
+      printf("소켓 바인딩에 성공하였습니다.\n");
+      return sockfd;
+   }
+   else
+   {
+      printf("소켓 바인딩에 실패하였습니다.\n");
+      exit(0);
+   }
+}
+int do_wait(int sockfd, int nClient) // client address.
+{
 
-      len = sizeof(addr_client);
-      connfd = accept(sockfd, (struct sockaddr *)&addr_client, &len);
+   int len;
+   int connfd;
+   struct sockaddr_in addr_client;
+   bzero(&addr_client, sizeof(addr_client));
+   if (listen(sockfd, nClient) == -1)
+   {
+      printf("클라이언트 리스닝에 실패하였습니다.\n");
+      exit(0);
+   }
+   else
+   {
 
-      if(connfd == -1)
-      {
+      printf("클라이언트 리스닝에 성공하였습니다.\n");
+   }
 
-         printf("클라이언트와 연결에 실패하였습니다.\n");
-         exit(0);
+   len = sizeof(addr_client);
+   connfd = accept(sockfd, (struct sockaddr *)&addr_client, &len);
 
-      }
-      else
-      {
+   if (connfd == -1)
+   {
 
-         printf("클라이언트와 연결에 성공하였습니다.\n"); 
-         return connfd; 
+      printf("클라이언트와 연결에 실패하였습니다.\n");
+      exit(0);
+   }
+   else
+   {
 
-      }
-
-     
+      printf("클라이언트와 연결에 성공하였습니다.\n");
+      return connfd;
+   }
 }
 
-
-
-int enable_chat_server(int connfd) // server address , port , the number of client. 
+int enable_chat_server(int connfd) // server address , port , the number of client.
 {
-    
-   
-   char buffer[MAX]; 
+
+   char buffer[MAX];
    char bufferTx[MAX];
    char bufferRx[MAX];
-   
-   memset(bufferRx,0,sizeof(bufferRx));
-   memset(bufferTx,0,sizeof(bufferTx));
+
+   memset(bufferRx, 0, sizeof(bufferRx));
+   memset(bufferTx, 0, sizeof(bufferTx));
 
    int var = 0;
-   
-   printf("클라이언트와 채팅을 시작합니다.\n"); 
-   getchar(); 
+
+   printf("클라이언트와 채팅을 시작합니다.\n");
+   getchar();
 
    while (1)
    {
-      
-     // bzero(buffer,sizeof(buffer));
-     
-      
-      
-      memset(bufferRx,0,sizeof(bufferRx));
-    //  fflush(stdin);
-     // fflush(stdout);
+
+      memset(bufferRx, 0, sizeof(bufferRx));
+
       read(connfd, bufferRx, sizeof(bufferRx));
-      printf("From Client : %s",bufferRx);
-    
-     // bzero(buffer,sizeof(buffer));
-       memset(bufferTx,0,sizeof(bufferTx));
-       var = 0;
-       printf("To Client : "); 
-       while((bufferTx[var++] = getchar()) != '\n'); 
-     //  bufferTx[strlen(bufferTx) - 1] = '\0';
-     //  fflush(stdin);
-      // fflush(stdout);
-       write(connfd,bufferTx,sizeof(bufferTx));  
+      printf("From Client : %s", bufferRx);
+      if (strncmp("quit", bufferRx, 4) == 0) break;
+
+      memset(bufferTx, 0, sizeof(bufferTx));
+      var = 0;
+      printf("To Client : ");
+      while ((bufferTx[var++] = getchar()) != '\n')
+         ;
+      //  bufferTx[strlen(bufferTx) - 1] = '\0';
+
+      write(connfd, bufferTx, sizeof(bufferTx));
+      if (strncmp("quit", bufferTx, 4) == 0) break;
       
-
-
-      if( strncmp("quit", bufferRx, 4) == 0 || strncmp("quit",bufferTx,4) == 0)
-      {
-         printf("Quit Chatting...\n");
-         memset(bufferRx,0,sizeof(bufferRx));
-         memset(bufferTx,0,sizeof(bufferTx));
-         return -1; 
-         
-      }
-                
+   
    }
-
+   
+   return -1;
 
 }
 
 int do_chat_server(int port, int nclient)
 {
-    
-    
-      
-    
-      int sockfd;
-      int connfd; 
-      
-      sockfd =  init_sock_server(port);
-      connfd =  do_wait(sockfd,nclient);
-              
-      if ( enable_chat_server(connfd) == -1 ) 
-      {
-         
-         
-         close(sockfd); 
-         return -1; 
 
+   int sockfd;
+   int connfd;
 
-      }
+   sockfd = init_sock_server(port);
+   connfd = do_wait(sockfd, nclient);
 
+   if (enable_chat_server(connfd) == -1)
+   {
 
-
-     
-
+      close(sockfd);
+      return -1;
+   }
 }
-
 
 int main(int argc, char **argv[])
 {
-       
+
    printf("서버 프로그램입니다 ( 재작자 : 오선철 ).\n");
    printf("Ubuntu-18.04환경에서 재작하였습니다.\n");
    printf("쓰레드를 이용하여 동시 채팅 기능 구현 예정입니다...\n");
 
-  
+   int port, nclient;
 
-   int port,nclient; 
-  
-   
-   printf("Port : "); scanf("%d",&port);
-   printf("The number of client : ");scanf("%d",&nclient);
+   printf("Port : ");
+   scanf("%d", &port);
+   printf("The number of client : ");
+   scanf("%d", &nclient);
 
-   if ( do_chat_server(port,nclient) == -1 ) printf("프로그램 종료되었습니다.\n");
-
-
- 
-
-
+   if (do_chat_server(port, nclient) == -1)
+      printf("프로그램 종료되었습니다.\n");
 
    return 0;
-
-
 }
