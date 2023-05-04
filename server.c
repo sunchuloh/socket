@@ -12,7 +12,7 @@
 
 #define MAX 1024
 #define PORT 8080
-#define TxBufferSize 1024
+#define TxBufferSize 10
 #define RxBufferSize 1024
 
 // servaddr.sin_family = AF_INET;
@@ -99,12 +99,12 @@ int do_wait(int sockfd, int nClient) // client address.
    }
 }
 
-int enable_chat_server(int connfd) // server address , port , the number of client.
+int enable_chat_module_server(int connfd) // server address , port , the number of client.
 {
 
    char buffer[MAX];
-   char bufferTx[MAX];
-   char bufferRx[MAX];
+   char bufferTx[TxBufferSize];
+   char bufferRx[RxBufferSize];
 
    memset(bufferRx, 0, sizeof(bufferRx));
    memset(bufferTx, 0, sizeof(bufferTx));
@@ -120,24 +120,33 @@ int enable_chat_server(int connfd) // server address , port , the number of clie
       memset(bufferRx, 0, sizeof(bufferRx));
 
       read(connfd, bufferRx, sizeof(bufferRx));
-      printf("From Client : %s", bufferRx);
-      if (strncmp("quit", bufferRx, 4) == 0) break;
+      printf("From Client : %s\n", bufferRx);
+      if (strncmp("quit", bufferRx, 4) == 0)
+         break;
 
       memset(bufferTx, 0, sizeof(bufferTx));
-      var = 0;
       printf("To Client : ");
-      while ((bufferTx[var++] = getchar()) != '\n')
-         ;
-      //  bufferTx[strlen(bufferTx) - 1] = '\0';
-
-      write(connfd, bufferTx, sizeof(bufferTx));
-      if (strncmp("quit", bufferTx, 4) == 0) break;
+      scanf("%s",bufferTx);
+      /*
+      var = 0;
       
-   
-   }
-   
-   return -1;
+      while (((bufferTx[var++] = getchar()) != '\n'))
+      {
 
+         if (var > TxBufferSize)
+         {
+
+            printf("TxBuffer OverFlow Error...");
+            return -1;
+         }
+      }
+      */
+      write(connfd, bufferTx, sizeof(bufferTx));
+      if (strncmp("quit", bufferTx, 4) == 0) return -1;        
+      
+   }; 
+
+  
 }
 
 int do_chat_server(int port, int nclient)
@@ -149,7 +158,7 @@ int do_chat_server(int port, int nclient)
    sockfd = init_sock_server(port);
    connfd = do_wait(sockfd, nclient);
 
-   if (enable_chat_server(connfd) == -1)
+   if (enable_chat_module_server(connfd) == -1)
    {
 
       close(sockfd);
