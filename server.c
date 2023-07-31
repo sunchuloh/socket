@@ -166,7 +166,7 @@ int do_chat_server(int port, int nclient)
    }
 }
 
-int main(int argc, char **argv[])
+int main(int argc, char *argv[])
 {
 
    printf("서버 프로그램입니다 ( 재작자 : 오선철 ).\n");
