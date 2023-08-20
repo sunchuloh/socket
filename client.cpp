@@ -34,7 +34,8 @@ class ETH
  ETH(char* ,int);  // Require Both IP Address & Port. 
  ~ETH(); 
  void Transmit(char* ) const; 
- char Receive(); 
+ char Receive();
+ void Receive(char* ,int);  
 
   ETH* Get_This(); 
 
@@ -43,7 +44,8 @@ class ETH
 
 ETH :: ETH(char* Address ,int Port)
 {
-
+    
+    char c; 
     cout << "--- Construcing Ethernet Instance ---" << endl; 
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
@@ -60,10 +62,10 @@ ETH :: ETH(char* Address ,int Port)
         cout << "--- Get SYN(1) + ACK(1) Flag From Server Sucessfully [ " << Address << " ] ---" << endl; 
         cout << "--- Client Enters Establishment To Server [ " << Address << " ] ---" << endl; 
 
+
     }
-  
      
-    
+        
 
 }
 
@@ -91,13 +93,27 @@ char ETH :: Receive()
      if( state == -1 )
      {
 
-        cout << "--- Fail To Receive Ethernet Data to Server ---" << endl; 
+        cout << "--- Fail To Receive Ethernet Data From Server ---" << endl; 
 
      }
 
 
 }
 
+void ETH :: Receive(char* Buffer, int size)
+{
+
+    int state = read(sockfd,Buffer,size);
+    if(state == -1)
+    {
+
+        cout <<"--- Fail To Receive Ethernet Data From Server ---" << endl; 
+
+    }
+
+
+
+}
 ETH :: ~ETH()
 {
 
