@@ -33,9 +33,12 @@ class ETH
  // Constructor
  ETH(char* ,int);  // Require Both IP Address & Port. 
  ~ETH(); 
- void Transmit(char* ) const; 
+ void Transmit(char* );
  char Receive();
  void Receive(char* ,int);  
+
+ int GetSockFD();
+
 
   ETH* Get_This(); 
 
@@ -69,12 +72,19 @@ ETH :: ETH(char* Address ,int Port)
 
 }
 
-
-void ETH :: Transmit(char* Buffer) const 
+int ETH :: GetSockFD()
 {
 
 
-     int state = write(sockfd,Buffer,sizeof(Buffer)); 
+    return sockfd;
+}
+
+
+void ETH :: Transmit(char* Buffer)
+{
+
+
+     int state = write(sockfd,Buffer,strlen(Buffer)); 
      if( state == -1 )
      {
 
@@ -161,13 +171,20 @@ cout << "clinet...!!!" <<endl;
 
     pETH = new ETH( Address,Port ); 
 
-    pETH->Transmit("Hello I'm Clinet ...!!!\n");
+    // pETH->Transmit("Hello I'm Clinet ...!!!\n");
 
     cout << "pETH : " << (int *)pETH << endl;
     cout << "pETH->Get_This() : " << (int *)pETH->Get_This() << endl;
 
     pthread_create(&ETH_Rx_Task_Thread_TID, NULL, &ETH_Rx_Task_Thread, NULL);
     pthread_create(&KeyButton_Rx_Task_Thread_TID, NULL, &KeyButton_Rx_Task_Thread, NULL);
+
+    while(1)
+    {
+
+
+
+    }
 
     pthread_join(ETH_Rx_Task_Thread_TID, NULL);
     pthread_join(KeyButton_Rx_Task_Thread_TID, NULL);
@@ -182,44 +199,35 @@ cout << "clinet...!!!" <<endl;
 void *KeyButton_Rx_Task_Thread(void *argu)
 {
 
-    cout << "---  KeyButton Receive Task Thread Entry Point ---" << endl;
 
-    int idx = 0;
-    char c;
-    char *Buffer = new char[1024];
-    memset(Buffer, 0x0, sizeof(char) * 1024);
+    cout << "---  KeyButton Rx Task Thread Entry Point ---" << endl;
+    char Buffer[1024];
+    int sockfd = pETH->GetSockFD(); 
+    int state; 
+    
+    
+    bzero(Buffer,sizeof(char)*1024);
 
-    getchar();
-
-    while (1)
+    while(1)
     {
 
-        c = getchar();
-        Buffer[idx++] = c;
-        if (c == '\b')
+        cout << "Message For Host : ";
+        cin >> Buffer;
+
+        state = write(sockfd,Buffer,1024); 
+        if( state != -1 )
         {
 
-            putchar(' ');
+            bzero(Buffer,1024); 
+            cout << "write ok" << endl; 
         }
-        else if (c == '\n')
-        {
+        
 
-             cout << "Console : " << Buffer;
-             pETH->Transmit(Buffer);
-
-            if (strcmp("quit\n", Buffer) == 0)
-            {
-                cout << "--- Exit Process ---" << endl;
-                memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-                delete pETH;
-                delete[] Buffer;
-
-                exit(1);
-            }
-            memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-            idx = 0;
-        }
     }
+
+   
+
+       
 
     return NULL;
 }

@@ -11,452 +11,451 @@
 #include <locale.h>
 // #include "./server.h"
 
-#define SOCKET_CREATION_ERROR -1 
-#define BIND_OK 0 
-#define LISTEN_OK 0 
-#define LISTEN_ERROR -1 
-#define SOCKET_ACCEPT_ERROR -1 
+#define SOCKET_CREATION_ERROR -1
+#define BIND_OK 0
+#define LISTEN_OK 0
+#define LISTEN_ERROR -1
+#define SOCKET_ACCEPT_ERROR -1
+#define WRITE_ERROR -1
+#define WRITE_EOF 0
+#define READ_ERROR -1
+#define READ_EOF 0
+#define TCP_TRANSMIT_ERROR -1
+#define TCP_TRANSMIT_OK 0
+
+#define TCP_RECEIVE_ERROR -1
+#define TCP_RECEIVE_OK 0
 
 using namespace std;
-
-
-
 
 class Ethernet
 {
 
 private:
-    
+   
+   
+    struct sockaddr_in *pGuest_Addr;
+    int *pHostFD;
 
-      struct sockaddr_in* ptr_Addr_Guest;
-      int* ptr_HostFD; 
-
-    bool Bind_Flag = false; 
-    bool Listen_Flag = false; 
+    bool Bind_Flag = false;
+    bool Listen_Flag = false;
     int Binding_State;
     int Listening_State = -1;
- 
+
     int SocketFD;
 
-    int Port_Num;  
+    int Port_Num;
     int Guest_Num;
-    int Est_Num = 0; 
-    struct sockaddr_in Addr_Host; 
-   
-  
+    int Est_Num = 0;
+    struct sockaddr_in Host_Addr;
 
 public:
-
-
-
     /* --- Constructor --- */
-    Ethernet(const int& _Port_Num, const int& _Cli_Num); 
-    Ethernet(const sockaddr_in& s); 
-    
+    Ethernet(const int &_Port_Num, const int &_Cli_Num);
+    Ethernet(const sockaddr_in &s);
+
     /* --- Destructor --- */
     ~Ethernet();
 
-    // This Pointer 
-    Ethernet* Get_This(); 
-    Ethernet& Get_Instace(); 
-    
+    // This Pointer
+    Ethernet *GetThis();
+    Ethernet &GetInstace();
 
-    /* ---Getter --- */  
-    struct sockaddr_in& Get_AddrHost(); 
-    struct sockaddr_in Get_AddrGuest(int Idx); 
+    /* ---Getter --- */
 
-    
-    int Get_PortNum(); 
-    int Get_GuestNum();
-    int& Get_Listening_State();
-    int& Get_Binding_State(); 
-    int Get_SocketFD();
-    int Get_HostFD(int Idx); 
-    int Get_EstNum();
+    int GetHostFD(int Idx) const;
 
-    bool Get_BindFlag(); 
-    bool Get_ListenFlag(); 
-    
+    struct sockaddr_in &GetHostAddr();
+    struct sockaddr_in &GetGuestAddr(int Idx);
 
+    int GetPortNum();
+    int GetGuestNum();
+    int &GetListening_State();
+    int &GetBinding_State();
+    int GetSocketFD();
 
-    /* --- Setter --- */ 
+    int GetEstNum();
 
+    bool GetBindFlag();
+    bool GetListenFlag();
 
-   struct sockaddr_in& Set_AddrGuest(int idx); 
-   struct sockaddr_in& Set_AddrGuest(const sockaddr_in& s, int idx); 
+    int GetIndexPointer();
+
+    /* --- Setter --- */
+
+    struct sockaddr_in &SetGuestAddr(int idx);
+    struct sockaddr_in &SetGuestAddr(const sockaddr_in &s, int idx);
+
+    int &SetEstNum();
+    int SetListen();
+
+    int &SetHostFD(int Idx);
+
+    void SetHostFD(int _HostFD, int Idx);
+
+    void SetEstNum(const int &Number);
+
+    void SetPortNum(int Value);
+    void SetBindFlag(bool Flag);
+
    
-    int& Set_EstNum();
-    int Set_Listen(); 
+    void SetListening_State(int Value);
 
-    int& Set_HostFD(int Idx);
-
-    void Set_HostFD(int _HostFD, int Idx); 
-
-    void Set_EstNum(const int& Number); 
-    
-   
-    void Set_PortNum(int Value);
-    void Set_BindFlag(bool Flag); 
-    
-
-
-    
-    void SetClient_Number(int Value);
-    void SetListening_State(int Value); 
-    
-
-    
     /* --- Generic Method */
-    void Transmit(char * Buffer);
-    char Receive();
+    void CountEstNum(); 
+    int Transmit(char *Buffer, int Idx);
+    char Receive(int Idx);
     void Receive(char *Buffer, int Size);
-
- 
-
-
-
+    int Receive(int idx, char *Buffer, int size);
+    int Receive(int idx, char &c);
 
 };
 
-
-
 /* --- Constructor --- */
-Ethernet :: Ethernet(const int& _Port_Num, const int& _Guest_Num)
+Ethernet ::Ethernet(const int & _Port_Num, const int &_Guest_Num)
 {
     
-    cout << "--- Creation Ethernet Instance ---" << endl;
-    cout << "--- Guest Number : " << _Guest_Num << " --- "<< endl; 
-    cout << "--- Port Number : " << _Port_Num << " --- " << endl;
-   
-   
-    
-    Guest_Num = _Guest_Num;
-    Port_Num = _Port_Num; 
-         
-    ptr_HostFD = new int[_Guest_Num];
-    ptr_Addr_Guest = new struct sockaddr_in[_Guest_Num]; 
-   
-    bzero(ptr_HostFD, sizeof(int)*_Guest_Num);
-    bzero(ptr_Addr_Guest,sizeof(struct sockaddr_in)*_Guest_Num);
-    bzero(&Addr_Host, sizeof(Addr_Host));
-  
 
-    Addr_Host.sin_family = AF_INET;
-    Addr_Host.sin_addr.s_addr = htonl(INADDR_ANY);
-    Addr_Host.sin_port = htons(Port_Num);
+    Guest_Num = _Guest_Num;
+    Port_Num = _Port_Num;
+
+    cout << "--- Creating Ethernet Instance ---" << endl;
+    cout << "--- Guest Number : " << Guest_Num << " --- " << endl;
+    cout << "--- Port Number : " << Port_Num << " --- " << endl;
+
+   
+
+    pHostFD = new int[Guest_Num];
+    pGuest_Addr = new struct sockaddr_in[Guest_Num];
+
+    bzero(pHostFD, sizeof(int) * Guest_Num);
+    bzero(pGuest_Addr, sizeof(struct sockaddr_in) * Guest_Num);
+    bzero(&Host_Addr, sizeof(Host_Addr));
+
+    Host_Addr.sin_family = AF_INET;
+    Host_Addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    Host_Addr.sin_port = htons(Port_Num);
 
     SocketFD = socket(AF_INET, SOCK_STREAM, 0);
-    if (SocketFD == SOCKET_CREATION_ERROR )
+    if (SocketFD == SOCKET_CREATION_ERROR)
     {
         cout << "--- Socket Creation : Error ---" << endl;
         exit(0);
     }
-    else 
+    else
     {
 
         cout << "--- Socket Creation : OK ---" << endl;
-        cout << "--- Socket File Descriptor : " << SocketFD << " ---" << endl; 
-        int state = bind(SocketFD, (struct sockaddr *)&Addr_Host, sizeof(Addr_Host));
+        cout << "--- Socket File Descriptor : " << SocketFD << " ---" << endl;
+        int state = bind(SocketFD, (struct sockaddr *)&Host_Addr, sizeof(Host_Addr));
         if (state == BIND_OK)
         {
-            int state; 
+            int state;
             int Temp_SocketFD = SocketFD;
             cout << "--- Socket Binding : OK ---" << endl;
             Bind_Flag = true;
-            Set_BindFlag(true);  
+            SetBindFlag(true);
 
-            
-
-            state = listen(Temp_SocketFD,Guest_Num); 
-            if( state == LISTEN_OK)
+            state = listen(Temp_SocketFD, Guest_Num);
+            if (state == LISTEN_OK)
             {
 
-                cout << "--- Socket Listening : OK ---" << endl; 
+                cout << "--- Socket Listening : OK ---" << endl;
                 Listen_Flag = true;
-
             }
-            else if ( state == LISTEN_ERROR )
+            else if (state == LISTEN_ERROR)
             {
 
-                 cout << "--- Socket Listening : ERROR ---" << endl; 
-                 Listen_Flag = false; 
-
+                cout << "--- Socket Listening : ERROR ---" << endl;
+                Listen_Flag = false;
             }
-            
-            
-           
         }
         else if (state != BIND_OK)
         {
             cout << "--- Socket Binding : Error ---" << endl;
-            Bind_Flag = false; 
-            Set_BindFlag(false); 
+            Bind_Flag = false;
+            SetBindFlag(false);
         }
-
     }
 }
 
-
 /* --- Generic Method --- */
-void Ethernet :: Transmit(char* Buffer) 
+int Ethernet ::Transmit(char *Buffer, int idx)
 {
+    int HostFD;
+    int state;
+    if (idx > Est_Num)
+    {
 
+        return TCP_TRANSMIT_ERROR;
+    }
+    else
+    {
 
-     int state = write(SocketFD,Buffer,sizeof(Buffer)); 
-     if( state == -1 )  
-     cout << "TCP Transmit : Error" <<endl; 
-     
-       
+        HostFD = pHostFD[idx];
+        state = write(HostFD, Buffer, sizeof(Buffer));
+        if ((state != WRITE_ERROR) && (state != WRITE_EOF))
+        {
 
-     
+            return TCP_TRANSMIT_OK;
+        }
+        else
+        {
 
+            return TCP_TRANSMIT_ERROR;
+        }
+    }
 }
 
-char  Ethernet :: Receive()
+int Ethernet ::Receive(int idx, char &c)
+{
+
+    int HostFD;
+    int state;
+    
+    if (idx > Est_Num)
+    {
+        return TCP_RECEIVE_ERROR;
+    }
+    else
+    {
+
+        HostFD = pHostFD[idx];
+        state = read(HostFD, &c, 1);
+        if ((state != READ_ERROR) && (state != READ_EOF))
+        {
+
+            return TCP_RECEIVE_OK;
+        }
+        else
+        {
+            return TCP_RECEIVE_ERROR;
+        }
+    }
+}
+
+char Ethernet ::Receive(int Idx)
+{
+
+    int HostFD;
+    int state;
+    char c;
+    if (Idx > Est_Num)
+    {
+    }
+    else
+    {
+
+        HostFD = pHostFD[Idx];
+        state = read(HostFD, &c, 1);
+        if ((state != READ_ERROR) && (state != READ_EOF))
+        {
+
+            return c;
+        }
+        else
+        {
+        }
+    }
+}
+
+int Ethernet :: Receive(int idx, char *Buffer, int size)
 {
     
-     char c;
-     int state = read(SocketFD,&c,1); 
-     if( state == -1 ) 
-     cout << "TCP Receive : Error" << endl; 
-     
-      
+        int state;
+        state = read(pHostFD[idx], Buffer, size);
+        return state; 
 
-     
+        
+
+        
 }
 
-void Ethernet :: Receive(char* Buffer, int size)
+
+
+void Ethernet ::Receive(char *Buffer, int size)
 {
 
-    int state = read(SocketFD,Buffer,size);
-    if(state == -1) 
-    cout << "TCP Receive : Error" << endl; 
-    
-      
-   
-
+    int state = read(SocketFD, Buffer, size);
+    if (state == -1)
+        cout << "TCP Receive : Error" << endl;
 }
 
-/* --- Destructor --- */
-Ethernet :: ~Ethernet()
+void Ethernet :: CountEstNum()
 {
 
-     cout << "Destructing [ " << this << " ] : OK" << endl;
-     close(SocketFD); 
+
+Est_Num++; 
 
 }
-
 
 
 
 /* --- Setter --- */
 
-struct sockaddr_in& Ethernet ::  Set_AddrGuest(int idx)
+struct sockaddr_in &Ethernet ::SetGuestAddr(int idx)
 {
 
-
-return ptr_Addr_Guest[idx]; 
-
-
+    return pGuest_Addr[idx];
 }
-struct sockaddr_in& Ethernet :: Set_AddrGuest(const sockaddr_in& s, int idx)
+struct sockaddr_in &Ethernet ::SetGuestAddr(const sockaddr_in &s, int idx)
 {
 
-
-ptr_Addr_Guest[idx] = s; 
-
-
+    pGuest_Addr[idx] = s;
 }
-   
-int& Ethernet ::  Set_EstNum()
+
+int &Ethernet ::SetEstNum()
 {
 
-return Est_Num;
-
-
+    return Est_Num;
 }
 
-
-void Ethernet :: Set_BindFlag(bool Flag)
+void Ethernet ::SetBindFlag(bool Flag)
 {
 
-Bind_Flag = Flag; 
-  
-
+    Bind_Flag = Flag;
 }
 
-
-int Ethernet :: Set_Listen()
+int Ethernet ::SetListen()
 {
 
-int state; 
+    int state;
 
-if( Listen_Flag == false)
+    if (Listen_Flag == false)
+    {
+
+        state = listen(SocketFD, Guest_Num);
+
+        return state;
+    }
+    else
+    {
+
+        return LISTEN_OK;
+    }
+}
+
+int &Ethernet ::SetHostFD(int Idx)
 {
 
-
-state = listen(SocketFD,Guest_Num); 
-
-return state;
-
+    return pHostFD[Idx];
 }
-else 
+
+void Ethernet ::SetHostFD(int _HostFD, int Idx)
 {
 
-return LISTEN_OK; 
-
+    pHostFD[Idx] = _HostFD;
 }
 
-
-
-}
-
-int& Ethernet :: Set_HostFD(int Idx)
+void Ethernet ::SetEstNum(const int &Number)
 {
 
-    return ptr_HostFD[Idx]; 
-
+    Est_Num = Number;
 }
 
-void Ethernet :: Set_HostFD(int _HostFD,int Idx)
+void Ethernet ::SetListening_State(int Value)
 {
 
-
-ptr_HostFD[Idx] = _HostFD; 
-
-
+    this->Listening_State = Value;
 }
-
-
-void Ethernet :: Set_EstNum(const int& Number)
-{
-
-Est_Num = Number;
-
-}
-
-
-
-
-void Ethernet :: SetListening_State(int Value)
-{
-
-
-
-
-this->Listening_State = Value; 
-
-
-}
-
-
-
-
 
 /* --- Getter --- */
 
-struct sockaddr_in& Ethernet :: Get_AddrHost() 
+int Ethernet ::GetHostFD(int Idx) const
+{
+
+    return pHostFD[Idx];
+}
+
+struct sockaddr_in &Ethernet ::GetHostAddr()
+{
+
+    return Host_Addr;
+}
+
+struct sockaddr_in& Ethernet ::GetGuestAddr(int Idx)
+{
+
+    return pGuest_Addr[Idx];
+}
+
+bool Ethernet ::GetListenFlag()
+{
+
+    return Listen_Flag;
+}
+
+int Ethernet::GetEstNum()
+{
+
+    return Est_Num;
+}
+
+Ethernet *Ethernet ::GetThis()
+{
+
+    return this;
+}
+
+int Ethernet ::GetGuestNum()
+{
+
+    return Guest_Num;
+}
+
+int Ethernet ::GetPortNum()
+{
+
+    return Port_Num;
+}
+
+int Ethernet ::GetSocketFD()
+{
+
+    return SocketFD;
+}
+
+bool Ethernet ::GetBindFlag()
+{
+
+    return Bind_Flag;
+}
+
+
+/* --- Destructor --- */
+Ethernet ::~Ethernet()
 {
    
-    return Addr_Host;
-}
+    cout << "Destructing Ethernet Instance of " << this << " is Done " << endl; 
+    cout << "The Number of Channel is " << Est_Num << endl; 
 
+    for ( int i = 0 ; i < Est_Num ; i++ )
+    cout << "Guest Address on index of " << i << " is " << inet_ntoa(pGuest_Addr[i].sin_addr); 
+           
+    for ( int i = 0 ; i < Est_Num ; i++ )
+    {
+    close(pHostFD[i]); 
+    cout << "Close Active Channel to Guest on index of " << i << endl; 
+    
+    }
 
-struct sockaddr_in Ethernet :: Get_AddrGuest(int Idx)
-{
-
-
-return ptr_Addr_Guest[Idx]; 
-
-
-}
-
-bool Ethernet :: Get_ListenFlag()
-{
-
-return Listen_Flag; 
-
-
-}
-
-int Ethernet :: Get_HostFD(int Idx)
-{
-
-
-
-return ptr_HostFD[Idx]; 
-
+    cout <<"Close Socket" << endl; 
+    close(SocketFD);
+    
+    delete [] pHostFD;
+    delete [] pGuest_Addr; 
+  
+    
 
 }
 
-int Ethernet::Get_EstNum()
-{
-
-return Est_Num; 
-
-}
-
-Ethernet* Ethernet :: Get_This()
-{
-
-return this; 
-
-}
-
-
-
-
-int Ethernet :: Get_GuestNum()
-{
-
-
-return Guest_Num;
-
-
-}
-
-
-
-
-int Ethernet :: Get_PortNum()
-{
-
-
-return Port_Num;
-
-}
-
-int Ethernet :: Get_SocketFD()
-{
-
-
-return SocketFD; 
-
-
-}
-
-
-bool Ethernet :: Get_BindFlag()
-{
-
-
-return Bind_Flag; 
-
-}
-
-
-
-
-
-
-
-Ethernet *ptr_ether; 
-
+Ethernet *pETH; 
+// pthread_t *pKeyButton_Rx_Task_Thread_TID;
+pthread_t *pETH_Rx_Task_Thread_TID;
 
 void *ETH_Rx_Task_Thread(void *argu);
 void *KeyButton_Rx_Task_Thread(void *);
 void *ETH_Accept_Task_Thread(void *argu);
-
 
 int main(int argc, char *argv[])
 {
@@ -465,59 +464,47 @@ int main(int argc, char *argv[])
     pthread_t ETH_Rx_Task_Thread_TID;
     pthread_t KeyButton_Rx_Task_Thread_TID;
 
-    int Count = 0; 
-    int Guest_Num; 
-    int Port_Num; 
-
+    int Count = 0;
+    int Guest_Num;
+    int Port_Num;
 
     cout << "Enter a Port : ";
-    cin >> Port_Num; 
+    cin >> Port_Num;
     cout << "Enter the number of client : ";
-    cin >> Guest_Num; 
+    cin >> Guest_Num;
 
-  ptr_ether = new Ethernet(Port_Num,Guest_Num); 
+    pETH = new Ethernet(Port_Num, Guest_Num);
+    // pKeyButton_Rx_Task_Thread_TID = new pthread_t[Guest_Num];
+    pETH_Rx_Task_Thread_TID = new pthread_t[Guest_Num];
 
-   printf("ptr_ether->Get_GuestNum() : %d\n",ptr_ether->Get_GuestNum());
-   printf("ptr_ether->Get_PortNum() : %d\n",  ptr_ether->Get_PortNum()); 
-   
-  
-    
+    printf("ptr_ether->Get_GuestNum() : %d\n", pETH->GetGuestNum());
+    printf("ptr_ether->Get_PortNum() : %d\n", pETH->GetPortNum());
 
-   
-    
-    
+    pthread_create(&ETH_Accept_Task_Thread_TID, NULL, &ETH_Accept_Task_Thread, NULL);
+    pthread_create(&KeyButton_Rx_Task_Thread_TID, NULL, &KeyButton_Rx_Task_Thread, NULL);
    
 
-    pthread_create(&ETH_Accept_Task_Thread_TID, NULL, &ETH_Accept_Task_Thread, NULL);  
-    // pthread_create(&ETH_Rx_Task_Thread_TID, NULL, &ETH_Rx_Task_Thread, NULL);
-    // pthread_create(&KeyButton_Rx_Task_Thread_TID, NULL, &KeyButton_Rx_Task_Thread, NULL);
-
-    
     while (1)
     {
-
-        cout << "main Thread While Loop" << Count++ <<endl;
-        sleep(1); 
-
-
+        
+        //cout << "main Thread While Loop" << Count++ << endl;
+        // sleep(1);
     }
 
     pthread_join(ETH_Accept_Task_Thread_TID, NULL);
-   // pthread_join(ETH_Rx_Task_Thread_TID, NULL);
-   // pthread_join(KeyButton_Rx_Task_Thread_TID, NULL);
-
+    // pthread_join(ETH_Rx_Task_Thread_TID, NULL);
+    pthread_join(KeyButton_Rx_Task_Thread_TID, NULL);
 
     return 0;
 }
 
-
-/*
 void *KeyButton_Rx_Task_Thread(void *argu)
 {
 
-    cout << "---  KeyButton Receive Task Thread Entry Point ---" << endl;
+    cout << "Under KeyButton Rx Task Thread Entry Point" << endl;
 
-    int idx = 0;
+    // int idx = *(int *)argu;
+    int k = 0;
     char c;
     char *Buffer = new char[1024];
     memset(Buffer, 0x0, sizeof(char) * 1024);
@@ -528,7 +515,7 @@ void *KeyButton_Rx_Task_Thread(void *argu)
     {
 
         c = getchar();
-        Buffer[idx++] = c;
+        Buffer[k++] = c;
         if (c == '\b')
         {
 
@@ -537,20 +524,20 @@ void *KeyButton_Rx_Task_Thread(void *argu)
         else if (c == '\n')
         {
 
-             cout << "Console : " << Buffer;
-             p_ethernet->Transmit(Buffer);
+            cout << "Console : " << Buffer;
 
             if (strcmp("quit\n", Buffer) == 0)
             {
                 cout << "--- Exit Process ---" << endl;
                 memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-                delete p_ethernet; 
+                delete [] pETH; 
+                delete [] pETH_Rx_Task_Thread_TID; 
                 delete[] Buffer;
 
                 exit(1);
             }
             memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-            idx = 0;
+            k = 0;
         }
     }
 
@@ -559,98 +546,94 @@ void *KeyButton_Rx_Task_Thread(void *argu)
 
 void *ETH_Rx_Task_Thread(void *argu)
 {
-
-    cout << "---  ETH Receive Task Thread Entry Point ---" << endl;
-    int idx = 0;
-    char *Buffer = new char[1024];
+    
+    char Buffer[1024];
+    int index = *(int *)argu;
+    int k = 0; 
     char c;
-
-    memset(Buffer, 0x0, 1024);
-
+    int fd = pETH->GetHostFD(index); 
+    cout << "Under TCP Rx Task Thread on index of " << index << endl; 
+    cout << "File Descriptor : " << fd << endl; 
+    int state; 
+       
+    bzero(Buffer,1024);
     while (1)
     {
-
-        c = p_ethernet->Receive();
-        Buffer[idx++] = c;
-
-        if (c == '\b')
-        {
-            putchar(' ');
-        }
-        else if (c == '\n')
+        
+        
+      
+        state = read(fd,Buffer,1024); 
+        if( state != -1 && state != 0 )
         {
 
-            cout << "From Vim : " << Buffer;
-
-            if (strcmp("quit\n", Buffer) == 0)
-            {
-                cout << "--- Exit Process ---" << endl;
-
-                memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-                delete p_ethernet; 
-                delete[] Buffer;
-
-                exit(1);
-            }
-
-            bzero(Buffer, sizeof(Buffer));
-            idx = 0;
+          cout << "From Guest : " << Buffer <<endl;
+          bzero(Buffer,1024); 
         }
+     
+      
+      
+                  
+                   
+
     }
+    
 
     return argu;
 }
 
-*/ 
-
-
-
 void *ETH_Accept_Task_Thread(void *argu)
 {
-    struct sockaddr_in Addr_Guest;
-    int HostFD;  
-    int len = sizeof(Addr_Guest); 
-    int cnt = 0; 
-    int idx = 0; 
-    int socketFD = ptr_ether->Get_SocketFD(); 
-    int Guest_Number = ptr_ether->Get_GuestNum(); 
-    int Est_Num = ptr_ether->Get_EstNum(); 
-    bool Bind_Flag = ptr_ether->Get_BindFlag(); 
-    char *Address; 
+
+
+
+     struct sockaddr_in Guest_Addr;
+     int len = sizeof(Guest_Addr); 
+     int HostFD;
+     int index = 0; 
+     int cnt = 0;
+     int k = 0;
   
-           
+
+   
+  
 
     while (1)
-    {
-         
-        cout << "--- Socket Accepting in I/O Mode ---" << endl; 
-        bzero(&Addr_Guest,sizeof(Addr_Guest)); 
-        HostFD = accept(socketFD, (struct sockaddr *)&Addr_Guest, (socklen_t *)&len); // Enter I/O Mode
-
-        if ( HostFD == SOCKET_ACCEPT_ERROR )
+    {   
+        cout << "Socket Accepting in I/O Mode" << endl;
+        int len = sizeof(pETH->GetGuestAddr(index)); 
+              
+       // int Value = accept(pETH->GetSocketFD(), (struct sockaddr *)&pETH->GetGuestAddr(k), (socklen_t *)&len);
+        int NewFD = accept(pETH->GetSocketFD(), (struct sockaddr *)&pETH->GetGuestAddr(index), (socklen_t *)&len);
+        if ( NewFD == SOCKET_ACCEPT_ERROR)
         {
 
-            cout << "Socket Accepting : Error" << endl; 
+            cout << "Socket Accepting : Error" << endl;
         }
         else
         {
 
-            cout << "--- Socket Accepting : OK ---" << endl;
-            ptr_ether->Set_HostFD(idx) =  HostFD; 
-            ptr_ether->Set_AddrGuest(idx) = Addr_Guest;  
-            ptr_ether->Set_EstNum()++; 
-         //  Address = inet_ntoa(ptr_ether->Get_AddrGuest(idx).sin_addr); 
-            Address = inet_ntoa(Addr_Guest.sin_addr);
+            
 
-            printf("Guest[%d] Address : %s\n",idx,Address); 
-            printf("Established Guest Number : %d\n",ptr_ether->Get_EstNum());
-            idx++; 
-                                
-                 
+            cout << "Socket Accepting : OK" << endl;
+
+
+           // pETH->SetHostFD(index,NewFD);
+            pETH->SetHostFD(index) = NewFD; 
+            pETH->CountEstNum(); 
+            
+            cout << "Guest Address to index of "<<  index <<  " is " << inet_ntoa(pETH->GetGuestAddr(index).sin_addr) << endl; 
+            cout << "The Number of Guest in Queue is " << pETH->GetEstNum() << endl; 
+            cout << "pETH->GetHostFD(index) : " << pETH->GetHostFD(index) << endl; 
+
+            int temp = index; 
+            pthread_create(&pETH_Rx_Task_Thread_TID[index], NULL, &ETH_Rx_Task_Thread, (void*)&temp);
+            index++;
+       
+              
+                    
+            
+            
            
         }
-   
     }
-
-
 }
