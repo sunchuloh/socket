@@ -553,7 +553,8 @@ void *ETH_Rx_Task_Thread(void *argu)
     char c;
     int fd = pETH->GetHostFD(index); 
     cout << "Under TCP Rx Task Thread on index of " << index << endl; 
-    cout << "File Descriptor : " << fd << endl; 
+    cout << "File Descriptor : " << fd << endl;
+    char* Addr = inet_ntoa(pETH->GetGuestAddr(index).sin_addr); 
     int state; 
        
     bzero(Buffer,1024);
@@ -566,7 +567,7 @@ void *ETH_Rx_Task_Thread(void *argu)
         if( state != -1 && state != 0 )
         {
 
-          cout << "From Guest : " << Buffer <<endl;
+          cout << "From [ "<<  Addr << " ] : "  << Buffer <<endl;
           bzero(Buffer,1024); 
         }
      
