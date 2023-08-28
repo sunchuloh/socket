@@ -31,9 +31,11 @@ private:
 
     struct sockaddr_in Server_Addr;
     int Port_Number;
-    int Guest_Number;
+    int Queue_Size;  
     int Bind_State; 
     int SocketFD; 
+    int Session_Number = 0; 
+
 
     
 
@@ -48,29 +50,44 @@ public:
 
     /* --- Setter --- */
 
-    int Set_Listen();
+    int& Set_SessionNum();
+    
 
+    int Set_Listen();
     void Set_Binding_Flag(int Flag);
     void Set_Listening_Flag(int Flag);
    
 
     /* --- Getter --- */
+
+    int Get_SessionNum();
+
     int Get_SocketFD(); 
-    int Get_GuestNum(); 
+    int Get_QueueSize(); 
+    
     int Get_Binding_Flag();
     int Get_Listeing_Flag(); 
+
+    /* --- Generic Method --- */
+
+   
+
+   
+
+    
 
     
 
 
 };
-
-
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Constructor */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 Socket :: Socket(const struct sockaddr_in& s,const int& n)
 {
 
     
-    Guest_Number = n;
+    Queue_Size = n; 
     bzero(&Server_Addr,sizeof(Server_Addr));
     
     Server_Addr.sin_family = s.sin_family;
@@ -82,6 +99,7 @@ Socket :: Socket(const struct sockaddr_in& s,const int& n)
     if ( SocketFD == -1 )  
     {
         printf("--- Socket Creation : Fail ---\n");
+        perror("Error : "); 
         exit(0);
     }
     else
@@ -98,15 +116,19 @@ Socket :: Socket(const struct sockaddr_in& s,const int& n)
             Bind_State = Value;
                        
         }
-        else if ( Value != BIND_OK)
+        else if ( Value != BIND_OK )
         {
             printf("--- Socket Binding : Fail ---\n");
+            perror("Error : "); 
             Bind_State = Value; 
             exit(0);
         }
     }
 }
 
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Destructor */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 Socket ::~Socket()
 {
 
@@ -115,7 +137,16 @@ printf("--- Destructing Socket Instance [%d] : OK ---\n",this);
 
 }
 
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* Setter */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+
+int& Socket :: Set_SessionNum()
+{
+
+return Session_Number; 
+
+}
 
 
 int Socket :: Set_Listen()
@@ -123,27 +154,42 @@ int Socket :: Set_Listen()
 
 int state; 
 if( Bind_State == BIND_OK )
-state = listen(SocketFD,Guest_Number);
+state = listen(SocketFD,Queue_Size);
 return state;
 
 }
 
 
 
-
-/* ---  Getter --- */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Getter */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 
 int Socket :: Get_SocketFD()
 {
 
     return SocketFD;
 }
-int Socket :: Get_GuestNum()
+int Socket :: Get_QueueSize()
 {
 
-return Guest_Number; 
+return Queue_Size; 
 
 }
+
+int Socket :: Get_SessionNum()
+{
+
+return Session_Number; 
+
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Generic Method */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+
+
 
 
 
@@ -151,7 +197,7 @@ return Guest_Number;
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Host Class*/
+/* Host Class */
 
 class Host
 {
@@ -161,13 +207,13 @@ private:
     
 
     
-    struct sockaddr_in Guest_Addr;
+    struct sockaddr_in Client_Addr; 
 
     int Binding_Flag;   
     int Listening_Flag;
 
-    int Port_Number;
-    int Guest_Number;
+  
+    int Client_Number = 0; 
 
     int HostFD; 
 
@@ -182,31 +228,34 @@ public:
         
 
     /* --- Getter ---  */
-
+    
     Host *Get_ThisPointer(); 
     Host &Get_Instance();     
 
    
-    struct sockaddr_in &Get_GuestAddr();
+    struct sockaddr_in Get_ClientAddr();
 
-    int& Get_HostFD(); 
-
-    int Get_Port_Number();
-    int Get_GuestNum();
+    int& Get_HostFD();   
+    int Get_ClientNum();
     int Get_Listening_Flag();
     int Get_Binding_Flag();
     int Get_Established_File_Descriptor();
 
-    /* --- Setter ---  */
-    void Set_GuestAddr(const sockaddr_in& ); 
 
+    /* --- Setter ---  */
+
+ 
+    void Set_ClientAddr(struct sockaddr_in& s);
+    struct sockaddr_in& Set_ClientAddr(); 
+    void Set_ClientAddr(const sockaddr_in& ); 
     void Set_Port_Number(int Value);
     void Set_Client_Number(int Value);
     void Set_Listening_Flag(int Value);
     void Set_Binding_Flag(int Value);
     void Set_Established_File_Descriptor(int File_Descriptor, int Index);
 
-    /* --- Generic Method --- */
+
+/* --- Generic Method --- */
 
     void Transmit(char *Buffer, int File_Descriptor);
     void Transmit(char *Buffer);
@@ -215,16 +264,105 @@ public:
     void Receive(char *Buffer, int Size);
 
 
-    /* --- OVerloaDinG --- */
+/* --- OVerloaDinG --- */
+
 
   
 
 };
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* --- Default Constructor  --- */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+
+Host :: Host()
+{
+
+bzero(&Client_Addr,sizeof(Client_Addr)); 
+
+
+}
 
 
 
 
+
+
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* --- Setter --- */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+void Host :: Set_ClientAddr(const struct sockaddr_in& s)
+{
+
+  Client_Addr = s; 
+
+
+}
+
+struct sockaddr_in& Host :: Set_ClientAddr()
+{
+
+
+return Client_Addr; 
+
+
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* --- Getter --- */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+Host *Host ::Get_ThisPointer()
+{
+
+    return this;
+}
+
+Host &Host ::Get_Instance()
+{
+
+    return *this;
+}
+
+
+struct sockaddr_in Host ::Get_ClientAddr()
+{
+
+   
+    return Client_Addr;
+}
+
+
+int& Host :: Get_HostFD()
+{
+
+
+return this->HostFD; 
+
+}
+
+
+int Host ::Get_Binding_Flag()
+{
+
+    return Binding_Flag;
+}
+int Host::Get_Listening_Flag()
+{
+
+    return Listening_Flag;
+}
+
+int Host ::Get_ClientNum()
+{
+
+    return Client_Number;
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* --- Generic Method --- */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 void Host :: Transmit(char *Buffer)
 {
 
@@ -257,8 +395,10 @@ void Host ::Receive(char *Buffer, int size)
     if (state == -1)
         cout << "TCP Receive : Error" << endl;
 }
-
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* --- Destructor --- */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+
 Host ::~Host()
 {
 
@@ -266,65 +406,9 @@ Host ::~Host()
     close(HostFD);
 }
 
-/* --- Setter ---*/
-void Set_GuestAddr(const sockaddr_in& s)
-{
-
-  
-
-}
-
-/* --- Getter --- */
-Host *Host ::Get_ThisPointer()
-{
-
-    return this;
-}
-
-Host &Host ::Get_Instance()
-{
-
-    return *this;
-}
-
-
-struct sockaddr_in &Host ::Get_GuestAddr()
-{
-
-   
-    return Guest_Addr;
-}
-
-
-int& Host :: Get_HostFD()
-{
-
-
-return this->HostFD; 
-
-}
-
-
-int Host ::Get_Binding_Flag()
-{
-
-    return Binding_Flag;
-}
-int Host::Get_Listening_Flag()
-{
-
-    return Listening_Flag;
-}
-
-int Host ::Get_GuestNum()
-{
-
-    return Guest_Number;
-}
-
-
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* --- OveRLoadInG ---*/
-
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
 
 
 
@@ -335,17 +419,18 @@ int Host ::Get_GuestNum()
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* Global */
 
-pthread_t Host_Accept_Task_Thread_TID;
-pthread_t Host_Rx_Task_Thread_TID;
-pthread_t KeyButton_Receive_Task_Thread_TID;
+pthread_t Server_Ax_TID; 
+pthread_t Server_Rx_TID;
+pthread_t Key_Rx_TID; 
 
 
-Host *pHost;
 Socket *pSocket;
+Host *pHost;
 
-void *Host_Rx_Task_Thread(void *argu);
-void *KeyButton_Rx_Task_Thread(void *);
-void *Host_Accept_Task_Thread(void *argu);
+
+void *Server_Ax_Thread(void *argu);
+void *Key_Rx_Thread(void *);
+void *Server_Rx_Thread(void *argu);
 
 
 
@@ -364,23 +449,24 @@ int main(int argc, char *argv[])
     struct sockaddr_in Server_Addr;
 
     int Count = 0;
-    int Guest_Num;
-    int Port_Num;;
+    /* Queue Size means The Number of Client You Want to Accpet.  */
+    /*  지정된 Queqe Size만큼 Client의 접속을 허용한다. */
+    int Queue_Size;
+    int Port_Num;
 
    
-    cout << "Enter a Port : ";
-    cin >> Port_Num;
-    cout << "Enter the number of Guest : ";
-    cin >> Guest_Num;
+    printf("Enter Port Number : "); scanf("%d",&Port_Num);
+    printf("Ennter Client Queue Size : "); scanf("%d",&Queue_Size);
+    
 
     
    bzero(&Server_Addr, sizeof(Server_Addr));
    Server_Addr.sin_family = AF_INET;
    Server_Addr.sin_addr.s_addr = htonl(INADDR_ANY);
    Server_Addr.sin_port = htons(Port_Num);
+   
+    pSocket = new Socket(Server_Addr,Queue_Size);  
     
-
-    pSocket = new Socket(Server_Addr,Guest_Num); 
     if( pSocket->Set_Listen() == LISTEN_OK )
     {
       printf("--- Socket Listening : OK ---\n"); 
@@ -390,21 +476,21 @@ int main(int argc, char *argv[])
     {
 
         printf("--- Socket Listening : Fail ---\n");
+        perror("Error : "); 
         exit(0); 
 
     }
 
     
-    pHost = new Host[Guest_Num];
+    pHost = new Host[Queue_Size];
     
-
     
 
    
 
-    pthread_create(&Host_Accept_Task_Thread_TID, NULL, &Host_Accept_Task_Thread, NULL);
-    // pthread_create(&ETH_Rx_Task_Thread_TID, NULL, &ETH_Rx_Task_Thread, NULL);
-    // pthread_create(&KeyButton_Rx_Task_Thread_TID, NULL, &KeyButton_Rx_Task_Thread, NULL);
+    if( pthread_create(&Server_Ax_TID, NULL, Server_Ax_Thread, NULL) != 0) perror("Error : "); 
+   
+    
 
     while (1)
     {
@@ -413,23 +499,22 @@ int main(int argc, char *argv[])
         sleep(1);
     }
 
-    pthread_join(Host_Accept_Task_Thread_TID, NULL);
-    // pthread_join(ETH_Rx_Task_Thread_TID, NULL);
-    // pthread_join(KeyButton_Rx_Task_Thread_TID, NULL);
+    
 
     return 0;
 }
-void *Host_Accept_Task_Thread(void *argu)
+void *Server_Ax_Thread(void *argu)
 {
     
     
+    int SocketFD = pSocket->Get_SocketFD();
     
     
     int cnt = 0;
     int idx = 0; 
 
-    int SocketFD = pSocket->Get_SocketFD();
-    int Cli_Num = pSocket->Get_GuestNum();
+    
+    
     
      
 
@@ -437,22 +522,24 @@ void *Host_Accept_Task_Thread(void *argu)
     while (1)
     {
         
-        struct sockaddr_in Guest_Addr;
-        bzero(&Guest_Addr,sizeof(Guest_Addr)); 
-        int len = sizeof(Guest_Addr);        
-        int Value = accept(pSocket->Get_SocketFD(), (struct sockaddr *)&Guest_Addr, (socklen_t *)&len);
-        pHost[idx].Get_GuestAddr() = Guest_Addr;
-
+        struct sockaddr_in Client_Addr;
+        bzero(&Client_Addr,sizeof(Client_Addr)); 
+        int len = sizeof(Client_Addr);        
+        int FD = accept(pSocket->Get_SocketFD(), (struct sockaddr *)&Client_Addr, (socklen_t *)&len);
+        pHost[idx].Set_ClientAddr() = Client_Addr; 
         
-        if ( Value ==  ACCEPT_ERROR )
+        if ( FD ==  ACCEPT_ERROR )
         {
 
             printf("--- Socket Accept : Fail ---\n");
+            perror("Error : ");
         }
-        else if ( Value != ACCEPT_ERROR )
+        else if ( FD != ACCEPT_ERROR )
         {
-            
-            pHost[idx].Get_HostFD() = Value; 
+            pHost[idx].Set_Session(true); 
+            pHost[idx].Set_SessionFD() = FD; 
+            pSocket.Set_SessionNum()++;
+          
            
             printf("--- Socket Accept : OK ---\n");
            
