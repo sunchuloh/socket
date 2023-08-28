@@ -205,17 +205,18 @@ class Host
 private:
     
     
-
     
     struct sockaddr_in Client_Addr; 
 
     int Binding_Flag;   
     int Listening_Flag;
-
+    pthread_t Rx_TID;
   
     int Client_Number = 0; 
 
-    int HostFD; 
+    int SessionFD; 
+
+    bool Session_Flag; 
 
 public:
 
@@ -230,12 +231,13 @@ public:
     /* --- Getter ---  */
     
     Host *Get_ThisPointer(); 
-    Host &Get_Instance();     
+    Host &Get_Instance();    
 
-   
+  
+    bool Get_Session(); 
     struct sockaddr_in Get_ClientAddr();
-
-    int& Get_HostFD();   
+    
+    int Get_SessionFD();   
     int Get_ClientNum();
     int Get_Listening_Flag();
     int Get_Binding_Flag();
@@ -244,7 +246,8 @@ public:
 
     /* --- Setter ---  */
 
- 
+    void Set_Session(bool Flag); 
+    int& Set_SessionFD();
     void Set_ClientAddr(struct sockaddr_in& s);
     struct sockaddr_in& Set_ClientAddr(); 
     void Set_ClientAddr(const sockaddr_in& ); 
@@ -255,6 +258,8 @@ public:
     void Set_Established_File_Descriptor(int File_Descriptor, int Index);
 
 
+
+
 /* --- Generic Method --- */
 
     void Transmit(char *Buffer, int File_Descriptor);
@@ -262,6 +267,8 @@ public:
     char Receive();
     char Receive(int File_Descriptor);
     void Receive(char *Buffer, int Size);
+
+    bool CheckSession(); 
 
 
 /* --- OVerloaDinG --- */
@@ -308,6 +315,14 @@ return Client_Addr;
 
 }
 
+void Host :: Set_Session(bool Flag)
+{
+
+Session_Flag = Flag; 
+
+
+}
+
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* --- Getter --- */
@@ -333,11 +348,11 @@ struct sockaddr_in Host ::Get_ClientAddr()
 }
 
 
-int& Host :: Get_HostFD()
+int Host :: Get_SessionFD()
 {
 
 
-return this->HostFD; 
+return this->SessionFD; 
 
 }
 
@@ -363,38 +378,15 @@ int Host ::Get_ClientNum()
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* --- Generic Method --- */
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
-void Host :: Transmit(char *Buffer)
+bool Host :: CheckSession()
 {
 
-    int state = write(HostFD, Buffer, sizeof(Buffer));
-    if (state == -1)
-        cout << "TCP Transmit : Error" << endl;
+return Session_Flag; 
+
+
 }
 
-void Host ::Transmit(char *Buffer, int File_Descriptor)
-{
 
-    int state = write(File_Descriptor, Buffer, sizeof(Buffer));
-    if (state == -1)
-        cout << "TCP Transmit : Error" << endl;
-}
-
-char Host ::Receive()
-{
-
-    char c;
-    int state = read(HostFD, &c, 1);
-    if (state == -1)
-        cout << "TCP Receive : Error" << endl;
-}
-
-void Host ::Receive(char *Buffer, int size)
-{
-
-    int state = read(HostFD, Buffer, size);
-    if (state == -1)
-        cout << "TCP Receive : Error" << endl;
-}
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* --- Destructor --- */
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -403,7 +395,7 @@ Host ::~Host()
 {
 
     cout << "Destructing [ " << this << " ] : OK" << endl;
-    close(HostFD);
+    
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -420,7 +412,6 @@ Host ::~Host()
 /* Global */
 
 pthread_t Server_Ax_TID; 
-pthread_t Server_Rx_TID;
 pthread_t Key_Rx_TID; 
 
 
@@ -445,7 +436,8 @@ void *Server_Rx_Thread(void *argu);
 int main(int argc, char *argv[])
 {
 
-    
+       
+
     struct sockaddr_in Server_Addr;
 
     int Count = 0;
@@ -508,16 +500,12 @@ void *Server_Ax_Thread(void *argu)
     
     
     int SocketFD = pSocket->Get_SocketFD();
+    int Queue_Size = pSocket->Get_QueueSize(); 
     
     
     int cnt = 0;
-    int idx = 0; 
-
-    
-    
-    
-     
-
+    int idx = 0;  
+            
 
     while (1)
     {
@@ -536,22 +524,50 @@ void *Server_Ax_Thread(void *argu)
         }
         else if ( FD != ACCEPT_ERROR )
         {
+           
+           /* Searching Disabled Session */
+           for( int n = 0 ; n < Queue_Size ; n++)
+           {    
+                
+                if(!pHost[n].CheckSession())
+                {
+                   idx = n;     
+                   break; 
+                    
+                }
+
+           }
+           
             pHost[idx].Set_Session(true); 
             pHost[idx].Set_SessionFD() = FD; 
-            pSocket.Set_SessionNum()++;
+            pSocket->Set_SessionNum()++;
           
            
-            printf("--- Socket Accept : OK ---\n");
-           
-           
-            printf("pHost[%d].Get_HostFD() : %d\n",idx,pHost[idx].Get_HostFD());
-                                         
-            cout << "inet_ntoa(pETH->GetClientAddr(idx).sin_addr) : " << inet_ntoa(pHost[idx].Get_GuestAddr().sin_addr) << endl;
-            idx++;
+            printf("--- Socket Accept : OK ---\n");          
+            printf("pHost[%d].Get_HostFD() : %d\n",idx,pHost[idx].Get_SessionFD());
+            printf("inet_ntoa(pHost[%d].Get_ClientAddr().sin_addr) : %s\n",idx,inet_ntoa(pHost[idx].Get_ClientAddr().sin_addr)); 
+                                    
+            
             
         }
     }
 }
+
+void *TCP_Rx_Thread(void *argu)
+{
+
+    
+  
+
+   
+
+
+
+
+
+
+}
+
 /*
 void *KeyButton_Receive_Task_Thread(void *argu)
 {
@@ -598,47 +614,3 @@ void *KeyButton_Receive_Task_Thread(void *argu)
     return NULL;
 }
 
-void *Ethernet_Receive_Task_Thread(void *argu)
-{
-
-    cout << "---  ETH Receive Task Thread Entry Point ---" << endl;
-    int idx = 0;
-    char *Buffer = new char[1024];
-    char c;
-
-    memset(Buffer, 0x0, 1024);
-
-    while (1)
-    {
-
-        c = pETH->Receive();
-        Buffer[idx++] = c;
-
-        if (c == '\b')
-        {
-            putchar(' ');
-        }
-        else if (c == '\n')
-        {
-
-            cout << "From Vim : " << Buffer;
-
-            if (strcmp("quit\n", Buffer) == 0)
-            {
-                cout << "--- Exit Process ---" << endl;
-
-                memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-                delete pETH;
-                delete[] Buffer;
-
-                exit(1);
-            }
-
-            bzero(Buffer, sizeof(Buffer));
-            idx = 0;
-        }
-    }
-
-    return argu;
-}
-*/
