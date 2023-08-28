@@ -126,9 +126,26 @@ void ETH :: Receive(char* Buffer, int size)
 }
 ETH :: ~ETH()
 {
-
+     int state; 
      cout << "--- Destructing Object : " << this << " ---" << endl;  
-     close(sockfd);
+     cout << "--- Close Client Socket ---" << endl; 
+     state = close(sockfd);
+     if(state == 0 )
+     {
+
+        cout << "Close Socket is Done..." << endl;
+
+
+     }
+     else if ( state == -1)
+     {
+
+        perror("Close Socket Fail...\n"); 
+      //  fprintf(stderr, "Error: %s\n", strerror(errno)); 
+      //  cout << "stderr = " << stderr; 
+
+     }
+     
 
 }
 
@@ -202,15 +219,68 @@ void *KeyButton_Rx_Task_Thread(void *argu)
 
     cout << "---  KeyButton Rx Task Thread Entry Point ---" << endl;
     char Buffer[1024];
+    string str;
     int sockfd = pETH->GetSockFD(); 
     int state; 
+    char c; 
+    int i = 0; 
     
-    
+ 
     bzero(Buffer,sizeof(char)*1024);
 
+     
+   getchar(); 
+   while(true)
+   {
+
+
+        c = getchar(); 
+        Buffer[i++] = c; 
+        if( c == '\b')
+        {
+            putchar(' '); 
+            Buffer[--i] = ' '; 
+        }
+        else if ( c == '\n')
+        {   
+
+            Buffer[--i] = '\0'; 
+            cout << "Console : " << Buffer << endl; 
+            state = write(sockfd,Buffer,1024); 
+            if ( state == -1 )
+            {
+
+                cout <<"Write Error"<<endl; 
+
+            }
+            else
+            {
+
+                cout <<"Write OK"<<endl; 
+
+
+            }
+            if(strcmp(Buffer,"quit") == 0 )
+            {
+
+                cout <<"Quit Program" << endl;
+                delete pETH; 
+                exit(1);
+
+            }
+            bzero(Buffer,1024); 
+            i=0; 
+
+        }
+
+
+   }
+
+
+    /*
     while(1)
     {
-
+        
         cout << "Message For Host : ";
         cin >> Buffer;
 
@@ -223,7 +293,8 @@ void *KeyButton_Rx_Task_Thread(void *argu)
         }
         
 
-    }
+    } 
+    */ 
 
    
 

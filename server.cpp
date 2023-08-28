@@ -11,494 +11,405 @@
 #include <locale.h>
 // #include "./server.h"
 
-#define SOCKET_CREATION_ERROR -1
-#define BIND_OK 0
-#define LISTEN_OK 0
-#define LISTEN_ERROR -1
-#define SOCKET_ACCEPT_ERROR -1
-#define WRITE_ERROR -1
-#define WRITE_EOF 0
-#define READ_ERROR -1
-#define READ_EOF 0
-#define TCP_TRANSMIT_ERROR -1
-#define TCP_TRANSMIT_OK 0
-
-#define TCP_RECEIVE_ERROR -1
-#define TCP_RECEIVE_OK 0
-
 using namespace std;
 
-class Ethernet
+class TCP
 {
 
 private:
-   
-   
-    struct sockaddr_in *pGuest_Addr;
-    int *pHostFD;
+    struct sockaddr_in *Cli_Addr;
+    struct Channel *Channel;
+
+    int *EstFD;
+    bool* Con_State;
 
     bool Bind_Flag = false;
     bool Listen_Flag = false;
     int Binding_State;
     int Listening_State = -1;
 
-    int SocketFD;
+    int sockfd;
+    int Queue_Num = 0; 
 
-    int Port_Num;
-    int Guest_Num;
-    int Est_Num = 0;
-    struct sockaddr_in Host_Addr;
+    int Port_Number;
+    int Client_Number;
+    int Active_Channel_Number = 0;
+    struct sockaddr_in Serv_Addr;
 
 public:
     /* --- Constructor --- */
-    Ethernet(const int &_Port_Num, const int &_Cli_Num);
-    Ethernet(const sockaddr_in &s);
+
+    TCP(const int &_Port_Num, const int &_Cli_Num);
+    TCP(const sockaddr_in &s);
 
     /* --- Destructor --- */
-    ~Ethernet();
+    ~TCP();
 
     // This Pointer
-    Ethernet *GetThis();
-    Ethernet &GetInstace();
+    TCP *Get_This();
+    TCP &Get_Instace();
+
+
+      /* --- Setter --- */
+
+    struct sockaddr_in &Set_Cli_Addr(int idx);
+    struct sockaddr_in &Set_Cli_Addr(const sockaddr_in &s, int idx);
+
+    int &Set_ActiveChannelNum();
+
+    bool& Set_ConState(int idx); 
+
+    int &Set_EstFD(int idx);
+
+    void Set_EstFD(int Estfd, int idx);
+
+    void Set_ActiveChannelNum(const int &Number);
+
+    void Set_ChannelActive(int idx);
+
+    void Set_PortNum(int value);
+    void Set_BindFlag(bool flag);
+    int& Set_QueueNum(); 
+
+    void Set_Listening_State(int Value);
+
 
     /* ---Getter --- */
 
-    int GetHostFD(int Idx) const;
+    int Get_EstFD(int i) const;
+    int Get_QueueNum() const; 
 
-    struct sockaddr_in &GetHostAddr();
-    struct sockaddr_in &GetGuestAddr(int Idx);
+    struct sockaddr_in &Get_Cli_Addr(int k);
+    struct sockaddr_in Get_Serv_Addr();
 
-    int GetPortNum();
-    int GetGuestNum();
-    int &GetListening_State();
-    int &GetBinding_State();
-    int GetSocketFD();
+    int Get_PortNum();
+    int Get_GuestNum();
+    int &Get_Listening_State();
+    int &Get_Binding_State();
+    int Get_SocketFD();
 
-    int GetEstNum();
+    int Get_ActiveChannelNum();
 
-    bool GetBindFlag();
-    bool GetListenFlag();
+    bool Get_BindFlag();
+    bool Get_ListenFlag();
+    bool Get_ChannelActiveState(int idx);
 
-    int GetIndexPointer();
+    bool Get_ConState(int idx); 
 
-    /* --- Setter --- */
+    int getClientNumber();
 
-    struct sockaddr_in &SetGuestAddr(int idx);
-    struct sockaddr_in &SetGuestAddr(const sockaddr_in &s, int idx);
 
-    int &SetEstNum();
-    int SetListen();
-
-    int &SetHostFD(int Idx);
-
-    void SetHostFD(int _HostFD, int Idx);
-
-    void SetEstNum(const int &Number);
-
-    void SetPortNum(int Value);
-    void SetBindFlag(bool Flag);
-
-   
-    void SetListening_State(int Value);
+  
 
     /* --- Generic Method */
-    void CountEstNum(); 
-    int Transmit(char *Buffer, int Idx);
-    char Receive(int Idx);
-    void Receive(char *Buffer, int Size);
-    int Receive(int idx, char *Buffer, int size);
-    int Receive(int idx, char &c);
+    void EnableChannel(int i);
+    void DisableeChannel(int i);
 
+    void ListActiveChannel();
+    void CountActiveChannelNum();
+    int Transmit(char *Buffer, int i);
+    char Receive(int i);
+    void Receive(char *Buffer, int Size);
+    int Receive(int i, char *Buffer, int size);
+    int Receive(int i, char &c);
 };
 
 /* --- Constructor --- */
-Ethernet ::Ethernet(const int & _Port_Num, const int &_Guest_Num)
+TCP ::TCP(const int &_Port_Numer, const int &_Client_Numer )
 {
-    
 
-    Guest_Num = _Guest_Num;
-    Port_Num = _Port_Num;
+    Client_Number = _Client_Numer;
+    Port_Number = _Port_Numer;
 
     cout << "--- Creating Ethernet Instance ---" << endl;
-    cout << "--- Guest Number : " << Guest_Num << " --- " << endl;
-    cout << "--- Port Number : " << Port_Num << " --- " << endl;
+    cout << "--- Guest Number : " << Client_Number << " --- " << endl;
+    cout << "--- Port Number : " << Port_Number << " --- " << endl;
 
-   
+    Con_State = new bool[Client_Number]; 
+    EstFD = new int[Client_Number];
+    Cli_Addr = new struct sockaddr_in[Client_Number];
 
-    pHostFD = new int[Guest_Num];
-    pGuest_Addr = new struct sockaddr_in[Guest_Num];
+    // bzero(pChannelFD, sizeof(int) * Guest_Num);
 
-    bzero(pHostFD, sizeof(int) * Guest_Num);
-    bzero(pGuest_Addr, sizeof(struct sockaddr_in) * Guest_Num);
-    bzero(&Host_Addr, sizeof(Host_Addr));
+    bzero(Con_State,sizeof(bool)*Client_Number); 
+    bzero(EstFD, sizeof(int) * Client_Number);
+    bzero(Cli_Addr, sizeof(struct sockaddr_in) * Client_Number);
+    bzero(&Serv_Addr, sizeof(Serv_Addr));
 
-    Host_Addr.sin_family = AF_INET;
-    Host_Addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    Host_Addr.sin_port = htons(Port_Num);
+    Serv_Addr.sin_family = AF_INET;
+    Serv_Addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    Serv_Addr.sin_port = htons(Port_Number);
 
-    SocketFD = socket(AF_INET, SOCK_STREAM, 0);
-    if (SocketFD == SOCKET_CREATION_ERROR)
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1)
     {
-        cout << "--- Socket Creation : Error ---" << endl;
+        perror("Error : ");
         exit(0);
     }
     else
     {
 
-        cout << "--- Socket Creation : OK ---" << endl;
-        cout << "--- Socket File Descriptor : " << SocketFD << " ---" << endl;
-        int state = bind(SocketFD, (struct sockaddr *)&Host_Addr, sizeof(Host_Addr));
-        if (state == BIND_OK)
+        cout << "Socket Creation : OK " << endl;
+        cout << "Socket File Descriptor : " << sockfd << endl;
+        int state = bind(sockfd, (struct sockaddr *)&Serv_Addr, sizeof(Serv_Addr));
+        if (state == 0)
         {
             int state;
-            int Temp_SocketFD = SocketFD;
-            cout << "--- Socket Binding : OK ---" << endl;
-            Bind_Flag = true;
-            SetBindFlag(true);
-
-            state = listen(Temp_SocketFD, Guest_Num);
-            if (state == LISTEN_OK)
+            int tempfd = sockfd;
+            cout << "Socket Binding : OK " << endl;
+            state = listen(tempfd, Client_Number);
+            if (state == 0)
             {
 
-                cout << "--- Socket Listening : OK ---" << endl;
                 Listen_Flag = true;
             }
-            else if (state == LISTEN_ERROR)
+            else if (state == -1)
             {
 
-                cout << "--- Socket Listening : ERROR ---" << endl;
+                perror("Error : ");
                 Listen_Flag = false;
             }
         }
-        else if (state != BIND_OK)
+        else if (state != 0)
         {
-            cout << "--- Socket Binding : Error ---" << endl;
-            Bind_Flag = false;
-            SetBindFlag(false);
+            perror("Error :");
         }
     }
 }
 
 /* --- Generic Method --- */
-int Ethernet ::Transmit(char *Buffer, int idx)
+
+char TCP ::Receive(int i)
 {
-    int HostFD;
-    int state;
-    if (idx > Est_Num)
-    {
-
-        return TCP_TRANSMIT_ERROR;
-    }
-    else
-    {
-
-        HostFD = pHostFD[idx];
-        state = write(HostFD, Buffer, sizeof(Buffer));
-        if ((state != WRITE_ERROR) && (state != WRITE_EOF))
-        {
-
-            return TCP_TRANSMIT_OK;
-        }
-        else
-        {
-
-            return TCP_TRANSMIT_ERROR;
-        }
-    }
+}
+void TCP ::Receive(char *Buffer, int Size)
+{
+}
+int TCP ::Receive(int i, char *Buffer, int size)
+{
+}
+int TCP ::Receive(int i, char &c)
+{
 }
 
-int Ethernet ::Receive(int idx, char &c)
+void TCP ::CountActiveChannelNum()
 {
 
-    int HostFD;
-    int state;
-    
-    if (idx > Est_Num)
-    {
-        return TCP_RECEIVE_ERROR;
-    }
-    else
-    {
-
-        HostFD = pHostFD[idx];
-        state = read(HostFD, &c, 1);
-        if ((state != READ_ERROR) && (state != READ_EOF))
-        {
-
-            return TCP_RECEIVE_OK;
-        }
-        else
-        {
-            return TCP_RECEIVE_ERROR;
-        }
-    }
+    Active_Channel_Number++;
 }
-
-char Ethernet ::Receive(int Idx)
-{
-
-    int HostFD;
-    int state;
-    char c;
-    if (Idx > Est_Num)
-    {
-    }
-    else
-    {
-
-        HostFD = pHostFD[Idx];
-        state = read(HostFD, &c, 1);
-        if ((state != READ_ERROR) && (state != READ_EOF))
-        {
-
-            return c;
-        }
-        else
-        {
-        }
-    }
-}
-
-int Ethernet :: Receive(int idx, char *Buffer, int size)
-{
-    
-        int state;
-        state = read(pHostFD[idx], Buffer, size);
-        return state; 
-
-        
-
-        
-}
-
-
-
-void Ethernet ::Receive(char *Buffer, int size)
-{
-
-    int state = read(SocketFD, Buffer, size);
-    if (state == -1)
-        cout << "TCP Receive : Error" << endl;
-}
-
-void Ethernet :: CountEstNum()
-{
-
-
-Est_Num++; 
-
-}
-
 
 
 /* --- Setter --- */
 
-struct sockaddr_in &Ethernet ::SetGuestAddr(int idx)
+struct sockaddr_in &TCP ::Set_Cli_Addr(int k)
 {
 
-    return pGuest_Addr[idx];
+    return Cli_Addr[k];
 }
-struct sockaddr_in &Ethernet ::SetGuestAddr(const sockaddr_in &s, int idx)
+struct sockaddr_in &TCP ::Set_Cli_Addr(const sockaddr_in &s, int i)
 {
 
-    pGuest_Addr[idx] = s;
+    Cli_Addr[i] = s;
 }
 
-int &Ethernet ::SetEstNum()
-{
-
-    return Est_Num;
-}
-
-void Ethernet ::SetBindFlag(bool Flag)
+void TCP ::Set_BindFlag(bool Flag)
 {
 
     Bind_Flag = Flag;
 }
 
-int Ethernet ::SetListen()
+
+
+int &TCP ::Set_EstFD(int idx)
 {
 
-    int state;
-
-    if (Listen_Flag == false)
-    {
-
-        state = listen(SocketFD, Guest_Num);
-
-        return state;
-    }
-    else
-    {
-
-        return LISTEN_OK;
-    }
+    return EstFD[idx];
 }
 
-int &Ethernet ::SetHostFD(int Idx)
+void TCP ::Set_EstFD(int idx, int fd)
 {
 
-    return pHostFD[Idx];
+    EstFD[idx] = fd;
 }
 
-void Ethernet ::SetHostFD(int _HostFD, int Idx)
+void TCP ::Set_ActiveChannelNum(const int &Number)
 {
 
-    pHostFD[Idx] = _HostFD;
+    Active_Channel_Number = Number;
 }
 
-void Ethernet ::SetEstNum(const int &Number)
-{
-
-    Est_Num = Number;
-}
-
-void Ethernet ::SetListening_State(int Value)
+void TCP ::Set_Listening_State(int Value)
 {
 
     this->Listening_State = Value;
 }
 
+int& TCP :: Set_QueueNum()
+{
+
+
+return Queue_Num; 
+
+}
+
+bool& TCP :: Set_ConState(int idx)
+{
+
+return Con_State[idx]; 
+
+}
+
 /* --- Getter --- */
 
-int Ethernet ::GetHostFD(int Idx) const
+int TCP :: Get_QueueNum() const
 {
 
-    return pHostFD[Idx];
+    return Queue_Num; 
 }
 
-struct sockaddr_in &Ethernet ::GetHostAddr()
+int TCP ::Get_EstFD(int idx) const
 {
 
-    return Host_Addr;
+    return EstFD[idx];
 }
 
-struct sockaddr_in& Ethernet ::GetGuestAddr(int Idx)
+struct sockaddr_in TCP ::Get_Serv_Addr()
 {
 
-    return pGuest_Addr[Idx];
+    return Serv_Addr;
 }
 
-bool Ethernet ::GetListenFlag()
+struct sockaddr_in &TCP ::Get_Cli_Addr(int i)
+{
+
+    return Cli_Addr[i];
+}
+
+bool TCP ::Get_ListenFlag()
 {
 
     return Listen_Flag;
 }
 
-int Ethernet::GetEstNum()
+int TCP ::Get_ActiveChannelNum()
 {
 
-    return Est_Num;
+    return Active_Channel_Number;
 }
 
-Ethernet *Ethernet ::GetThis()
+TCP *TCP ::Get_This()
 {
 
     return this;
 }
 
-int Ethernet ::GetGuestNum()
+
+int TCP ::Get_SocketFD()
 {
 
-    return Guest_Num;
+    return sockfd;
 }
 
-int Ethernet ::GetPortNum()
-{
-
-    return Port_Num;
-}
-
-int Ethernet ::GetSocketFD()
-{
-
-    return SocketFD;
-}
-
-bool Ethernet ::GetBindFlag()
+bool TCP ::Get_BindFlag()
 {
 
     return Bind_Flag;
 }
 
-
-/* --- Destructor --- */
-Ethernet ::~Ethernet()
+bool TCP :: Get_ConState(int i)
 {
-   
-    cout << "Destructing Ethernet Instance of " << this << " is Done " << endl; 
-    cout << "The Number of Channel is " << Est_Num << endl; 
 
-    for ( int i = 0 ; i < Est_Num ; i++ )
-    cout << "Guest Address on index of " << i << " is " << inet_ntoa(pGuest_Addr[i].sin_addr); 
-           
-    for ( int i = 0 ; i < Est_Num ; i++ )
-    {
-    close(pHostFD[i]); 
-    cout << "Close Active Channel to Guest on index of " << i << endl; 
-    
-    }
 
-    cout <<"Close Socket" << endl; 
-    close(SocketFD);
-    
-    delete [] pHostFD;
-    delete [] pGuest_Addr; 
-  
-    
+return Con_State; 
+
+
 
 }
 
-Ethernet *pETH; 
-// pthread_t *pKeyButton_Rx_Task_Thread_TID;
-pthread_t *pETH_Rx_Task_Thread_TID;
 
-void *ETH_Rx_Task_Thread(void *argu);
-void *KeyButton_Rx_Task_Thread(void *);
-void *ETH_Accept_Task_Thread(void *argu);
+int TCP :: getClientNumber(){
+
+
+
+return Client_Number; 
+
+}
+
+/* --- Destructor --- */
+TCP ::~TCP()
+{
+    int State; 
+    cout << "Destructing TCP Instance " << this << " is Done" << endl;
+
+    State = close(sockfd);
+
+    if (State == -1)
+    {
+
+        perror("Error : ");
+    }
+    else if (State == 0)
+    {
+
+        cout << "close socket : " << sockfd << " OK "; 
+    }
+
+    delete[] EstFD;
+    delete[] Cli_Addr;
+}
+
+bool gQuit = false;
+
+TCP *Server;
+pthread_t* TCP_Rx_TID; 
+int SocketFD; 
+
+
+
+
+pthread_t TCP_Ax_TID;
+pthread_t Key_Rx_TID; 
+
+
+void *TCP_Rx_Routine(void *argu);
+void *Key_Rx_Routine(void *);
+void *TCP_Ax_Routine(void *argu);
 
 int main(int argc, char *argv[])
 {
 
-    pthread_t ETH_Accept_Task_Thread_TID;
-    pthread_t ETH_Rx_Task_Thread_TID;
-    pthread_t KeyButton_Rx_Task_Thread_TID;
-
     int Count = 0;
-    int Guest_Num;
-    int Port_Num;
+    int Guest;
+    int Port;
 
     cout << "Enter a Port : ";
-    cin >> Port_Num;
+    cin >> Port;
     cout << "Enter the number of client : ";
-    cin >> Guest_Num;
+    cin >> Guest;
 
-    pETH = new Ethernet(Port_Num, Guest_Num);
-    // pKeyButton_Rx_Task_Thread_TID = new pthread_t[Guest_Num];
-    pETH_Rx_Task_Thread_TID = new pthread_t[Guest_Num];
+    Server = new TCP(Port, Guest);
+    TCP_Rx_TID = new pthread_t[Guest];
+    SocketFD = Server->Get_SocketFD(); 
 
-    printf("ptr_ether->Get_GuestNum() : %d\n", pETH->GetGuestNum());
-    printf("ptr_ether->Get_PortNum() : %d\n", pETH->GetPortNum());
 
-    pthread_create(&ETH_Accept_Task_Thread_TID, NULL, &ETH_Accept_Task_Thread, NULL);
-    pthread_create(&KeyButton_Rx_Task_Thread_TID, NULL, &KeyButton_Rx_Task_Thread, NULL);
-   
+    if (pthread_create(&Key_Rx_TID, NULL, Key_Rx_Routine, NULL) != 0)
+        perror("Error : ");
+
+    if (pthread_create(&TCP_Ax_TID, NULL, TCP_Ax_Routine, NULL) != 0)
+        perror("Error : ");
 
     while (1)
     {
-        
-        //cout << "main Thread While Loop" << Count++ << endl;
-        // sleep(1);
+
     }
 
-    pthread_join(ETH_Accept_Task_Thread_TID, NULL);
-    // pthread_join(ETH_Rx_Task_Thread_TID, NULL);
-    pthread_join(KeyButton_Rx_Task_Thread_TID, NULL);
+   
+   
 
     return 0;
 }
 
-void *KeyButton_Rx_Task_Thread(void *argu)
+void *Key_Rx_Routine(void *argu)
 {
 
     cout << "Under KeyButton Rx Task Thread Entry Point" << endl;
@@ -507,7 +418,7 @@ void *KeyButton_Rx_Task_Thread(void *argu)
     int k = 0;
     char c;
     char *Buffer = new char[1024];
-    memset(Buffer, 0x0, sizeof(char) * 1024);
+    bzero(Buffer,1024); 
 
     getchar();
 
@@ -528,113 +439,153 @@ void *KeyButton_Rx_Task_Thread(void *argu)
 
             if (strcmp("quit\n", Buffer) == 0)
             {
-                cout << "--- Exit Process ---" << endl;
-                memset(Buffer, 0x0, sizeof(Buffer) * 1024);
-                delete [] pETH; 
-                delete [] pETH_Rx_Task_Thread_TID; 
-                delete[] Buffer;
 
-                exit(1);
+                 
+                gQuit = true;
+                
+                break; 
+                /*
+                Est Number -> Check Active State -> Close Sokcet. 
+                */
+              
+                // memset(Buffer, 0x0, sizeof(Buffer) * 1024);
             }
             memset(Buffer, 0x0, sizeof(Buffer) * 1024);
             k = 0;
         }
     }
 
+    delete[] Buffer;
     return NULL;
 }
 
-void *ETH_Rx_Task_Thread(void *argu)
+void *TCP_Ax_Routine(void *argu)
 {
-    
-    char Buffer[1024];
-    int index = *(int *)argu;
-    int k = 0; 
-    char c;
-    int fd = pETH->GetHostFD(index); 
-    cout << "Under TCP Rx Task Thread on index of " << index << endl; 
-    cout << "File Descriptor : " << fd << endl;
-    char* Addr = inet_ntoa(pETH->GetGuestAddr(index).sin_addr); 
-    int state; 
-       
-    bzero(Buffer,1024);
-    while (1)
+
+        
+    int idx = 0;
+    int cnt = 0;
+ 
+    while (gQuit != true)
     {
+       
         
-        
-      
-        state = read(fd,Buffer,1024); 
-        if( state != -1 && state != 0 )
-        {
-
-          cout << "From [ "<<  Addr << " ] : "  << Buffer <<endl;
-          bzero(Buffer,1024); 
-        }
-     
-      
-      
-                  
-                   
-
-    }
-    
-
-    return argu;
-}
-
-void *ETH_Accept_Task_Thread(void *argu)
-{
-
-
-
-     struct sockaddr_in Guest_Addr;
-     int len = sizeof(Guest_Addr); 
-     int HostFD;
-     int index = 0; 
-     int cnt = 0;
-     int k = 0;
-  
-
-   
-  
-
-    while (1)
-    {   
         cout << "Socket Accepting in I/O Mode" << endl;
-        int len = sizeof(pETH->GetGuestAddr(index)); 
-              
-       // int Value = accept(pETH->GetSocketFD(), (struct sockaddr *)&pETH->GetGuestAddr(k), (socklen_t *)&len);
-        int NewFD = accept(pETH->GetSocketFD(), (struct sockaddr *)&pETH->GetGuestAddr(index), (socklen_t *)&len);
-        if ( NewFD == SOCKET_ACCEPT_ERROR)
+      
+        struct sockaddr_in Client_Addr; 
+        int len = sizeof(Client_Addr); 
+        bzero(&Client_Addr,sizeof(Client_Addr)); 
+
+        int connfd = accept(SocketFD, (struct sockaddr *)&Client_Addr, (socklen_t *)&len); 
+        if (connfd == -1)
         {
 
-            cout << "Socket Accepting : Error" << endl;
+            perror("Error : ");
         }
         else
         {
 
+            char *Addr = inet_ntoa(Client_Addr.sin_addr);
+            for( int i = 0 ; i < Server->getClientNumber() ;  i++)
+            {
+
+               if (  Server->Get_ConState(i) == false )
+               {
+
+                idx = i;
+                break; 
+                  
+
+               }
+
+
+            }            
+                   
+            
+            Server->Set_Cli_Addr(idx) = Client_Addr;
+            cout << "Client Acceptance : OK " << endl;
+
             
 
-            cout << "Socket Accepting : OK" << endl;
 
 
-           // pETH->SetHostFD(index,NewFD);
-            pETH->SetHostFD(index) = NewFD; 
-            pETH->CountEstNum(); 
-            
-            cout << "Guest Address to index of "<<  index <<  " is " << inet_ntoa(pETH->GetGuestAddr(index).sin_addr) << endl; 
-            cout << "The Number of Guest in Queue is " << pETH->GetEstNum() << endl; 
-            cout << "pETH->GetHostFD(index) : " << pETH->GetHostFD(index) << endl; 
 
-            int temp = index; 
-            pthread_create(&pETH_Rx_Task_Thread_TID[index], NULL, &ETH_Rx_Task_Thread, (void*)&temp);
-            index++;
-       
-              
-                    
+        
+            Server->Set_EstFD(idx) = connfd; 
+            Server->Set_ConState(idx) = true; 
+            Server->Set_QueueNum()++; 
+
+            cout << "Queue : " << Server->Get_QueueNum() << endl; 
+            cout << "Client[" << idx << "]" << " : " << Addr;
             
+            int temp = idx; 
+
+            pthread_create(&TCP_Rx_TID[idx], NULL, TCP_Rx_Routine, (void *)&temp);
+            pthread_detach(TCP_Rx_TID[idx]);
             
-           
         }
     }
+}
+
+void *TCP_Rx_Routine(void *temp)
+{
+
+    
+    char *Buffer = new char[1024];
+    int idx = *(int *)temp; 
+    int EstFD = Server->Get_EstFD(idx); 
+    char* Addr = inet_ntoa(Server->Get_Cli_Addr(idx).sin_addr); 
+       
+    cout <<"\nUnder TCP Rx Routine[" << idx << "]" << endl; 
+    cout <<"HostFD[" << EstFD << "]" << endl; 
+
+    bzero(Buffer, 1024);
+    while (gQuit != true)
+    {
+      
+        int state = read(EstFD, Buffer, 1024);
+        if ( (state != -1) &&  (state != 0))
+        {
+
+            cout << "From [ " << Addr << " ] : " << Buffer << endl;
+           
+        }
+        else if (state == 0)
+        {
+
+            cout << "--- Client Close TCP Connection ---" << endl;
+            break; 
+        }
+        else if (state == -1)
+        {
+            if (errno == ECONNRESET || errno == EPIPE)
+            {
+
+                cout << "--- Client Close TCP Connection ---" << endl;
+                break; 
+            }
+            else
+            {
+                perror("Error : ");
+
+            }
+        }
+    }
+
+
+    int state = close(EstFD);
+    if( state == -1 )
+    perror("Error : "); 
+    else
+    {
+        cout << "Close Host[" << idx << "] is Okay...!!!" << endl; 
+        Server->Set_QueueNum()--; 
+        Server->Set_ConState(idx) = false; 
+        
+    }
+   
+   
+   delete[] Buffer;
+    
+
 }
