@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
                 Error_Handle();
             }
 
-            for (int k; k < Queue_Size; k++)
+            for (int k = 0 ; k < Queue_Size; k++)
             {
 
                 if (pHost[k].CheckSession() == true)
