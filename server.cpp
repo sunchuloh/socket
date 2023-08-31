@@ -482,7 +482,6 @@ void *Client_Ax_Thread(void *argu)
         {
 
             Error_Handle();
-            break; 
             if (errno == EBADF)
             {
                 
@@ -513,7 +512,7 @@ void *Client_Ax_Thread(void *argu)
 
             printf("!!! --- New Session is Activated --- !!!\n"); 
             printf("Session Number : [ %d ]\n",i); 
-            printf("Host[%d]'s Client Address : [ %s ]\n",i,inet_ntoa(pHost[i].Get_ClientAddr().sin_addr));
+            printf("Host[%d]'s Client Address : [ %s ]\n",inet_ntoa(pHost[i].Get_ClientAddr().sin_addr));
             printf("Host[%d]'s SessionFD : [ %d ]\n",i,FD);
             if ( pthread_create(pHost[i].Get_Msg_Rx_TID_Pointer(), NULL, Msg_Rx_Thread, &i) != 0 ) Error_Handle();
                            
@@ -522,7 +521,17 @@ void *Client_Ax_Thread(void *argu)
     }
 
 
-    return NULL; 
+    char* str = new char[1024]; 
+
+    char* ptr = strcpy(str,"It means Client_Ax_Thread is Totally Out !!!\n"); 
+
+    delete [] str;
+
+    return (void*)ptr; 
+
+
+
+
     
 
 }
@@ -539,7 +548,7 @@ void *Msg_Rx_Thread(void *argu)
     int SessionFD = pHost[idx].Get_SessionFD();
     char *Address = inet_ntoa(pHost[idx].Get_ClientAddr().sin_addr);
 
-    printf("!--- Session[%d] Activates Msg Rx Thread ---!\n",idx);
+    printf("!--- Session[%d] Enables Msg Rx Thread ---!\n",idx);
    
 
     while (1)
@@ -557,7 +566,7 @@ void *Msg_Rx_Thread(void *argu)
         else if (Status == 0)
         {
 
-          
+           //  printf("Session <%d> Got EOF\n", idx);
             Error_Handle(); 
             break;
         }
@@ -601,6 +610,7 @@ void *Key_Rx_Thread(void *argu)
     char Buffer[1024];
     int idx = 0;
     int SocketFD = pSocket->Get_SocketFD(); 
+    void* RetVal; 
     char c;
    
 
@@ -629,23 +639,18 @@ void *Key_Rx_Thread(void *argu)
                  
                 // 1. Close Socket
                 
-                int Status;
-                Status = shutdown(SocketFD,SHUT_RD);
-                
-                if( Status == -1 ) Error_Handle(); 
-                else printf("Shutdown Socket is OK\n");
+                int Status; 
                 Status = close(SocketFD);
                 if( Status == -1 ) Error_Handle();
                 else
                 {
                  
                  printf("Close Socket is OK\n"); 
-                 Status = pthread_join(Client_Ax_TID,NULL);
+                 Status = pthread_join(Client_Ax_TID,&RetVal);
                  if( Status == 0 )
-                 {  
-                   
+                 {
                     printf("Client_Ax_Thread is Killed\n");
-                
+                    printf("Client_Ax_Thread Return : %s\n",(char*)RetVal);
 
                  }
                  else Error_Handle(); 
@@ -669,13 +674,8 @@ void *Key_Rx_Thread(void *argu)
                 {
                     if (pHost[k].CheckSession())
                     {
-                        int SessionFD = pHost[k].Set_SessionFD();
-                        char *Addr = inet_ntoa(pHost[k].Get_ClientAddr().sin_addr); 
 
-                        printf("Host[%d] : Activated\n",k); 
-                        printf("`-Client Address : %s\n",Addr); 
-                        
-
+                        printf("Session[%d] : Activated\n",k); 
 
                     }
 
@@ -695,7 +695,7 @@ void Error_Handle()
 
     char *Msg = new char[1024];
     bzero(Msg, 1024);
-    sprintf(Msg, "Error(%d) ", errno);
+    sprintf(Msg, "Error(%d)", errno);
     perror(Msg);
     delete[] Msg;
 }
