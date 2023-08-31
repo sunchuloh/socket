@@ -62,9 +62,6 @@ public:
     int Get_Listeing_Flag();
 
     /* --- Generic Method --- */
-
-
-    
 };
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* Constructor */
@@ -116,17 +113,7 @@ Socket ::Socket(const struct sockaddr_in &s, const int &n)
 Socket ::~Socket()
 {
 
-    int Status = close(SocketFD);
-    if (Status == -1)
-    {
-        char Error[1024];
-        bzero(Error, 1024);
-        sprintf(Error, "Error : %d", errno);
-        perror(Error);
-    }
-
-    else
-        printf(" --- Close Socket : OK --- \n");
+  
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -188,11 +175,12 @@ private:
     int Binding_Flag;
     int Listening_Flag;
 
-    pthread_t Msg_Rx_TID;
+    pthread_t Rx_Msg_Tid; 
 
     int Client_Number = 0;
 
     int SessionFD;
+
 
     bool Session_Flag;
 
@@ -216,20 +204,19 @@ public:
     int Get_Binding_Flag();
     int Get_Established_File_Descriptor();
 
-    pthread_t Get_Msg_Rx_TID();
-    pthread_t *Get_Msg_Rx_TID_Pointer();
+    pthread_t Get_Rx_Msg_Tid();
+    pthread_t *Get_Rx_Msg_Tid_Pointer();
 
     /* --- Setter ---  */
 
-    pthread_t &Set_RxTID();
-    void Set_RxTID(pthread_t tid);
+
 
     void Set_Session(bool Flag);
     int &Set_SessionFD();
     void Set_SessionFD(int FD);
     void Set_ClientAddr(const struct sockaddr_in &s);
     struct sockaddr_in &Set_ClientAddr();
-   
+
     void Set_Port_Number(int Value);
     void Set_Client_Number(int Value);
     void Set_Listening_Flag(int Value);
@@ -284,15 +271,9 @@ struct sockaddr_in &Host ::Set_ClientAddr()
 
 void Host ::Set_Session(bool Flag)
 {
-   
-   
-   
-    Session_Flag = Flag;
-   
-  
-    
-}
 
+    Session_Flag = Flag;
+}
 
 int &Host ::Set_SessionFD()
 {
@@ -304,7 +285,6 @@ void Host ::Set_SessionFD(int FD)
 {
 
     SessionFD = FD;
-    
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -351,15 +331,15 @@ int Host ::Get_ClientNum()
     return Client_Number;
 }
 
-pthread_t Host ::Get_Msg_Rx_TID()
+pthread_t Host ::Get_Rx_Msg_Tid()
 {
 
-    return Msg_Rx_TID;
+    return Rx_Msg_Tid; 
 }
-pthread_t *Host ::Get_Msg_Rx_TID_Pointer()
+pthread_t *Host ::Get_Rx_Msg_Tid_Pointer()
 {
 
-    return &Msg_Rx_TID;
+    return &Rx_Msg_Tid;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -381,17 +361,17 @@ bool Host ::CheckSession()
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* Global */
 
-pthread_t Client_Ax_TID;
-pthread_t Key_Rx_TID;
+pthread_t Ax_Cli_Tid;
+pthread_t Rx_Key_Tid;
 
 // unique_ptr<class Socket> pSocket;
 // unique_ptr<class Host[]> pHost;
 Socket *pSocket;
 Host *pHost;
 
-void *Client_Ax_Thread(void *argu);
-void *Key_Rx_Thread(void *argu);
-void *Msg_Rx_Thread(void *argu);
+void *Ax_Cli_Thread(void *argu);
+void *Rx_Key_Thread(void *argu);
+void *Rx_Msg_Thread(void *argu);
 
 void Error_Handle();
 
@@ -444,27 +424,22 @@ int main(int argc, char *argv[])
 
     // pHost.reset(new class Host[Queue_Size]);
 
-    if (pthread_create(&Client_Ax_TID, NULL, Client_Ax_Thread, NULL) != 0)
+    if (pthread_create(&Ax_Cli_Tid, NULL, Ax_Cli_Thread, NULL) != 0)
+        Error_Handle();
+
+    if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) != 0)
         Error_Handle();
 
     
-    if (pthread_create(&Key_Rx_TID, NULL, Key_Rx_Thread, NULL) != 0)
-        Error_Handle();
-
-    else
-    {
-        if (pthread_detach(Key_Rx_TID) != 0)
-            Error_Handle();
-    }
+   
 
     while (1)
     {
-        
     }
 
     return 0;
 }
-void *Client_Ax_Thread(void *argu)
+void *Ax_Cli_Thread(void *argu)
 {
 
     int SocketFD = pSocket->Get_SocketFD();
@@ -476,6 +451,7 @@ void *Client_Ax_Thread(void *argu)
         struct sockaddr_in Client_Addr;
         bzero(&Client_Addr, sizeof(Client_Addr));
         int len = sizeof(Client_Addr);
+
         int FD = accept(SocketFD, (struct sockaddr *)&Client_Addr, (socklen_t *)&len);
 
         if (FD == -1)
@@ -484,7 +460,7 @@ void *Client_Ax_Thread(void *argu)
             Error_Handle();
             if (errno == EBADF)
             {
-                
+
                 printf("Bad Socket File Descriptor\n");
                 break;
             }
@@ -497,77 +473,61 @@ void *Client_Ax_Thread(void *argu)
             {
 
                 if (!pHost[k].CheckSession())
-                {   
-                    printf("Host[%d] : Disabled\n",k); 
+                {
+                    printf("Host[%d] : Disabled\n", k);
                     i = k;
                     break;
                 }
             }
-            pHost[i].Set_ClientAddr(Client_Addr); 
-            
-            pHost[i].Set_SessionFD(FD); 
+            pHost[i].Set_ClientAddr(Client_Addr);
+            pHost[i].Set_SessionFD(FD);
             pHost[i].Set_Session(true);
-            pSocket->Set_SessionNum()++;
-           
 
-            printf("!!! --- New Session is Activated --- !!!\n"); 
-            printf("Session Number : [ %d ]\n",i); 
-            printf("Host[%d]'s Client Address : [ %s ]\n",inet_ntoa(pHost[i].Get_ClientAddr().sin_addr));
-            printf("Host[%d]'s SessionFD : [ %d ]\n",i,FD);
-            if ( pthread_create(pHost[i].Get_Msg_Rx_TID_Pointer(), NULL, Msg_Rx_Thread, &i) != 0 ) Error_Handle();
-                           
-       
+            pSocket->Set_SessionNum()++;
+
+
+            printf("!!! --- New Session is Enabled --- !!!\n");
+            printf("Session Number : [ %d ] \n", i);
+            printf("Host[%d]'s Client Address : [ %s ]\n", i ,inet_ntoa(pHost[i].Get_ClientAddr().sin_addr));
+            printf("Host[%d]'s SessionFD : [ %d ]\n", i, FD);
+            if (pthread_create(pHost[i].Get_Rx_Msg_Tid_Pointer(), NULL, Rx_Msg_Thread, &i) != 0) Error_Handle();
+            
+                
         }
     }
-
-
-    char* str = new char[1024]; 
-
-    char* ptr = strcpy(str,"It means Client_Ax_Thread is Totally Out !!!\n"); 
-
-    delete [] str;
-
-    return (void*)ptr; 
-
-
-
-
-    
-
+  
 }
 
-void *Msg_Rx_Thread(void *argu)
+void *Rx_Msg_Thread(void *argu)
 {
-     // unique_ptr<char[]> Buffer ( new char[1024]);   
-    
-    int idx = *(int *)argu;
-    char *RxMsg = new char[1024];
+    // unique_ptr<char[]> Buffer ( new char[1024]);
 
-    
+    int idx = *(int *)argu;
+    char* Buffer = new char[1024];
 
     int SessionFD = pHost[idx].Get_SessionFD();
     char *Address = inet_ntoa(pHost[idx].Get_ClientAddr().sin_addr);
 
-    printf("!--- Session[%d] Enables Msg Rx Thread ---!\n",idx);
+    printf("Host[%d]'s Session Enabled Un Rx_Msg_Thread\n",idx); 
    
 
     while (1)
     {
 
-        bzero(RxMsg, 1024);
-        int Status = read(SessionFD, RxMsg, 1024);
+        bzero(Buffer, 1024);
+        int Status = read(SessionFD, Buffer, 1024);
 
         if ((Status != 0) && (Status != -1))
         {
 
-            printf("From [ %s ] : %s\n", Address, RxMsg);
+            printf("From [ %s ] : %s\n", Address, Buffer);
         }
 
-        else if (Status == 0)
+        else if (Status == 0 )
         {
 
-           //  printf("Session <%d> Got EOF\n", idx);
-            Error_Handle(); 
+            /* EOF From Client */
+            Error_Handle();
             break;
         }
 
@@ -579,43 +539,24 @@ void *Msg_Rx_Thread(void *argu)
         }
     }
 
-    
-    if( pHost[idx].CheckSession() == true )
-    {
-        int Status;
-        Status = close(SessionFD); 
-        if( Status == -1 ) Error_Handle(); 
-        else 
-        {
-            printf("Close Session[%d] : OK\n",idx); 
-            pHost[idx].Set_Session(false); 
-            pSocket->Set_SessionNum()--;
-         
 
-        }
-                
-    }
-     
-         
-
-    delete[] RxMsg; 
-  
+    delete[] Buffer; 
 }
 
-void *Key_Rx_Thread(void *argu)
+void *Rx_Key_Thread(void *argu)
 {
 
-    printf("--- Key Rx Thread --- \n");
+    printf("Under Rx_Key_Thread\n"); 
+  
     int Queue_Size = pSocket->Get_QueueSize();
-    char Buffer[1024];
+    char *Buffer = new char[1024]; 
     int idx = 0;
-    int SocketFD = pSocket->Get_SocketFD(); 
-    void* RetVal; 
-    char c;
+    int SocketFD = pSocket->Get_SocketFD();
    
+    char c;
 
+    
     getchar();
-
     while (1)
     {
 
@@ -636,58 +577,48 @@ void *Key_Rx_Thread(void *argu)
             if (strcmp("quit", Buffer) == 0)
             {
 
-                 
-                // 1. Close Socket
-                
-                int Status; 
-                Status = close(SocketFD);
-                if( Status == -1 ) Error_Handle();
-                else
-                {
-                 
-                 printf("Close Socket is OK\n"); 
-                 Status = pthread_join(Client_Ax_TID,&RetVal);
-                 if( Status == 0 )
-                 {
-                    printf("Client_Ax_Thread is Killed\n");
-                    printf("Client_Ax_Thread Return : %s\n",(char*)RetVal);
 
-                 }
-                 else Error_Handle(); 
+              
+                if ( pthread_cancel(Ax_Cli_Tid) != 0 ) Error_Handle();
+                else 
+                {   
 
+                    printf("To Cancel Ax_Cli_Thread Routine is Done\n"); 
+                    if( pthread_join(Ax_Cli_Tid,NULL) != 0 ) Error_Handle();
+                    else 
+                    {
+                        printf("To Join Ax_Cli_Thread Routine is Done\n"); 
+
+                    }
 
                 }
-
-                
-                // 1. Close Session
-                // 2. Close Thread
-                // 3. Close Socket.
 
                 break;
             }
             if (strcmp("list", Buffer) == 0)
             {
-                
-                printf("The Number of Activated Session : %d\n",pSocket->Get_SessionNum());
+
+                printf("The Number of Activated Session : %d\n", pSocket->Get_SessionNum());
                 /* Search Enabled Session */
-                for( int k = 0 ; k < Queue_Size ; k++ )
+                for (int i = 0; i < Queue_Size; i++)
                 {
-                    if (pHost[k].CheckSession())
-                    {
-
-                        printf("Session[%d] : Activated\n",k); 
-
+                    if (pHost[i].CheckSession())
+                    {   
+                        char* Addr = inet_ntoa(pHost[i].Get_ClientAddr().sin_addr);
+                        int SessionFD = pHost[i].Get_SessionFD(); 
+                        printf("Host[%d] : Enabled\n", i);
+                        printf("`-Cli Addr : %s\n",Addr); 
+                        printf("`-SessinFD : %d\n",SessionFD); 
                     }
-
                 }
-                               
             }
             bzero(Buffer, 1024);
             idx = 0;
         }
     }
 
-    return NULL;
+   
+    delete [] Buffer; 
 }
 
 void Error_Handle()
