@@ -458,12 +458,8 @@ void *Ax_Cli_Thread(void *argu)
         {
 
             Error_Handle();
-            if (errno == EBADF)
-            {
-
-                printf("Bad Socket File Descriptor\n");
-                break;
-            }
+            printf("Aborting accpet() is done\n");
+          
         }
         else if (FD != -1)
         {
@@ -576,22 +572,41 @@ void *Rx_Key_Thread(void *argu)
 
             if (strcmp("quit", Buffer) == 0)
             {
+                   
+                   
+                     /* Shutdown Socket Evokes Aborting accpet() in I/O Mode Under Ax_Cli_thread Routine.*/
+                     if (shutdown(SocketFD, SHUT_RD) == -1) Error_Handle();
+                     else
+                     {
+                         printf("To Shutdown Socket is Done\n");
+                         printf("To Shutdown Socket leads to Aborting accpet() in Blocking\n");
 
+                         /* Close Socket Evokes that read() return 0 To Client Side */
+                         /* when a Client Tries to Connect a Host */
 
-              
-                if ( pthread_cancel(Ax_Cli_Tid) != 0 ) Error_Handle();
-                else 
-                {   
+                         /* Session이 이미 수립된 Clinet의 경우 Program을 Kill하여 read()함수가 return 0을 하도록 가능.*/
+                         if (close(SocketFD) == -1) Error_Handle();
+                         else
+                         {
 
-                    printf("To Cancel Ax_Cli_Thread Routine is Done\n"); 
-                    if( pthread_join(Ax_Cli_Tid,NULL) != 0 ) Error_Handle();
-                    else 
-                    {
-                        printf("To Join Ax_Cli_Thread Routine is Done\n"); 
+                             printf("To Close Socket is Done\n");
+                             if (pthread_cancel(Ax_Cli_Tid) != 0) Error_Handle();
+                             else
+                             {
 
-                    }
-
-                }
+                                 printf("To Cancel Ax_Cli_Thread Routine is Done\n");
+                                 if (pthread_join(Ax_Cli_Tid, NULL) != 0) Error_Handle();
+                                 else
+                                 {
+                                     printf("To Join Ax_Cli_Thread Routine is Done\n");
+                                     printf(".\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n"); 
+                                    
+                                     printf("---> Kill Ax_Cli_Thread Routine : [ OK ]\n");
+                                     printf("---> Kill Socket : [ OK ]")
+                                 }
+                             }
+                         }
+                     }
 
                 break;
             }
