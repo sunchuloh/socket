@@ -599,10 +599,10 @@ void *Rx_Key_Thread(void *argu)
                                  else
                                  {
                                      printf("To Join Ax_Cli_Thread Routine is Done\n");
-                                     printf(".\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n.\n"); 
-                                    
-                                     printf("---> Kill Ax_Cli_Thread Routine : [ OK ]\n");
-                                     printf("---> Kill Socket : [ OK ]")
+                                     printf("'\n'\n'\n'\n");
+                                                                                                 
+                                     printf("Kill Ax_Cli_Thread Routine Out : [ OK ]\n");
+                                     printf("Kill Socket Out : [ OK ]\n");
                                  }
                              }
                          }
