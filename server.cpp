@@ -459,7 +459,8 @@ void *Ax_Cli_Thread(void *argu)
         struct sockaddr_in Client_Addr;
         bzero(&Client_Addr, sizeof(Client_Addr));
         int len = sizeof(Client_Addr);
-
+        
+        /* Shutdown(SocketFD,SHUT_RD)를 통해 accpet()함수 Abort */
         int FD = accept(SocketFD, (struct sockaddr *)&Client_Addr, (socklen_t *)&len);
 
         if (FD == -1)
@@ -517,6 +518,7 @@ void *Rx_Msg_Thread(void *argu)
     {
 
         bzero(Buffer, 1024);
+        /* shutdown(SessionFD,SHUT_RD)를 통해 read()함수 Abort */
         int Status = read(SessionFD, Buffer, 1024);
 
         if ((Status != 0) && (Status != -1))
@@ -613,6 +615,7 @@ void *Rx_Key_Thread(void *argu)
 
                          write(SessionFD,"!--- Server is Shutdown ---!\n",strlen("!--- Server is Shutdown ---!\n"));
 
+                        
                         if (shutdown(SessionFD, SHUT_RDWR) == -1)
                             perror("Error ");
                         else
