@@ -36,7 +36,7 @@ ETH ::ETH(char *Address, int Port)
 {
 
     char c;
-    cout << "--- Construcing Ethernet Instance ---" << endl;
+    cout << "Construcing Ethernet Instance ---" << endl;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -129,23 +129,23 @@ int main(int argc, char *argv[])
 
     pETH = new ETH(Address, Port);
 
+    if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) == 0)
+        printf("Create Rx_Key_Thread Routine : [ OK ]\n");
+    else
+        Error_Handle();
+    if (pthread_create(&Rx_Msg_Tid, NULL, Rx_Msg_Thread, NULL) == 0)
+        printf("Create Rx_Msg_Thread Routine : [ OK ]\n");
+    else
+        Error_Handle();
 
-    if ( pthread_create(&Rx_Key_Tid,NULL,Rx_Key_Thread,NULL) == 0 ) printf("Create Rx_Key_Thread Routine : [ OK ]\n");
-    else Error_Handle(); 
-    if(pthread_create(&Rx_Msg_Tid,NULL,Rx_Msg_Thread,NULL) == 0 ) printf("Create Rx_Msg_Thread Routine : [ OK ]\n"); 
-    else Error_Handle(); 
+    if (pthread_join(Rx_Key_Tid, NULL) == 0)
+        printf("Join Rx_Key_Thread Routine : [ OK ]\n");
+    else
+        Error_Handle();
 
-
-    if( pthread_join(Rx_Key_Tid,NULL) == 0 ) printf("Join Rx_Key_Thread Routine : [ OK ]\n"); 
-    else Error_Handle();
-
-
-
-    printf("Exit The Program\n"); 
-    delete pETH; 
+    printf("Exit The Program\n");
+    delete pETH;
     return 0;
-
-  
 }
 
 void *Rx_Key_Thread(void *argu)
@@ -155,52 +155,46 @@ void *Rx_Key_Thread(void *argu)
     char Buffer[1024];
     int SocketFD = pETH->GetSockFD();
     int state;
-    char c; 
-    int i = 0; 
+    char c;
+    int i = 0;
 
-    bzero(Buffer, 1024); 
-    getchar(); 
+    bzero(Buffer, 1024);
+    getchar();
 
     while (1)
     {
 
         c = getchar();
         Buffer[i++] = c;
-        if( c == '\b') putchar(' ');
-        else if ( c == '\n')
+        if (c == '\b')
+            putchar(' ');
+        else if (c == '\n')
         {
 
             Buffer[--i] = '\0';
-            printf("Client : %s\n",Buffer);
-            write(SocketFD,Buffer,strlen(Buffer));
-            if( strcmp(Buffer,"quit") == 0 )
+            printf("Client : %s\n", Buffer);
+            write(SocketFD, Buffer, strlen(Buffer));
+            if (strcmp(Buffer, "quit") == 0)
             {
 
-                if ( shutdown(SocketFD,SHUT_RDWR) == 0 ) printf("Shutdown SocketFD Write/Read Stream : [ OK ]\n");
-                else Error_Handle();
-
-
-                
+                if (shutdown(SocketFD, SHUT_RDWR) == 0)
+                    printf("Shutdown SocketFD Write/Read Stream : [ OK ]\n");
+                else
+                    Error_Handle();
             }
-            bzero(Buffer,1024);
-            i = 0 ; 
-
+            bzero(Buffer, 1024);
+            i = 0;
         }
-    
-
     }
 
-
-    printf("End of Rx_Key_Thread Routine\n"); 
-
- 
+    printf("End of Rx_Key_Thread Routine\n");
 }
 
 void *Rx_Msg_Thread(void *argu)
 {
 
     printf("Under Rx_Key_Thread Routine\n");
-    
+
     char Buffer[1024];
     char c;
     int SocketFD = pETH->GetSockFD();
@@ -224,28 +218,26 @@ void *Rx_Msg_Thread(void *argu)
         }
     }
 
-  
-    if( close(SocketFD) == 0 ) 
+    if (close(SocketFD) == 0)
     {
-               
-        printf("Close Socket : [ OK ]\n");
-        if( pthread_cancel(Rx_Key_Tid) == 0 )  printf("Cancel Rx_Key_Thread Routine : [ OK ]\n");
-        else Error_Handle(); 
-    
-    }
-    else Error_Handle(); 
 
+        printf("Close Socket : [ OK ]\n");
+        if (pthread_cancel(Rx_Key_Tid) == 0)
+            printf("Cancel Rx_Key_Thread Routine : [ OK ]\n");
+        else
+            Error_Handle();
+    }
+    else
+        Error_Handle();
 
     printf("End of Rx_Msg_Thread Routine\n");
-
-
 }
 void Error_Handle()
 {
 
     char *Msg = new char[1024];
     bzero(Msg, 1024);
-    sprintf(Msg, "Error Code < %d > ", errno);
+    sprintf(Msg, "Error No.(%d) ", errno);
     perror(Msg);
     delete[] Msg;
 }

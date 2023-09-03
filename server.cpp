@@ -9,26 +9,29 @@
 #include <unistd.h> // read(), write(), close()
 #include <wchar.h>
 #include <locale.h>
-#include <memory>
 
 using namespace std;
 
 class Socket;
 class Host;
 
-/* Socket Class */
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Socket Class */
+void *Ax_Cli_Thread(void *argu);
+void *Rx_Key_Thread(void *argu);
+void *Rx_Msg_Thread(void *argu);
+
+void Error_Handle();
+
+pthread_t Ax_Cli_Tid;
+pthread_t Rx_Key_Tid;
+
+// unique_ptr<class Socket> pSocket;
+// unique_ptr<class Host[]> pHost;
+
+Socket *pSocket;
 
 #define BIND_OK 0
 #define LISTEN_OK 0
 #define ACCEPT_ERROR -1
-
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Generic Method */
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
 
 /* Host Class */
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -121,7 +124,7 @@ Host ::Host()
 Host ::~Host()
 {
 
-    cout << "Destructing [ " << this << " ] : OK" << endl;
+    cout << "Destructing Host Instance [ " << this << " ] : OK" << endl;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -306,27 +309,25 @@ Socket ::Socket(const struct sockaddr_in &s, const int &n)
 
     if (SocketFD == -1)
     {
-        printf("--- Socket Creation : Fail ---\n");
-        perror("Error : ");
+        Error_Handle();
         exit(0);
     }
     else
     {
 
-        printf("--- Socket Creation : OK ---\n");
-        printf("--- Socket File Descriptor : %d\n", SocketFD);
+        printf("Create Socket : [ OK ]\n");
+        printf("Socket File Descriptor : %d\n", SocketFD);
 
         int Value = bind(SocketFD, (struct sockaddr *)&Server_Addr, sizeof(Server_Addr));
 
         if (Value == BIND_OK)
         {
-            printf("--- Socket Binding : OK ---\n");
+            printf("Bind Socket : [ OK ]\n");
             Bind_State = Value;
         }
         else if (Value != BIND_OK)
         {
-            printf("--- Socket Binding : Fail ---\n");
-            perror("Error : ");
+            Error_Handle();
             Bind_State = Value;
             exit(0);
         }
@@ -338,7 +339,7 @@ Socket ::Socket(const struct sockaddr_in &s, const int &n)
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 Socket ::~Socket()
 {
-
+    cout << "Destructing Socket Instance [ " << this << " ] : OK" << endl;
     delete[] pHost;
 }
 
@@ -354,7 +355,7 @@ void Socket ::PrintSession()
             int SessionFD = Get_Host(i).Get_SessionFD();
             char *Addr = inet_ntoa(Get_Host(i).Get_ClientAddr().sin_addr);
 
-            printf("Host[%d] : Enabled\n",i);
+            printf("Host[%d] : Enabled\n", i);
             printf("`-Cli Addr : %s\n", Addr);
             printf("`-SessionFD : %d\n", SessionFD);
         }
@@ -407,23 +408,6 @@ Host &Socket ::Get_Host(int idx)
     return pHost[idx];
 }
 
-pthread_t Ax_Cli_Tid;
-pthread_t Rx_Key_Tid;
-
-// unique_ptr<class Socket> pSocket;
-// unique_ptr<class Host[]> pHost;
-
-Socket *pSocket;
-Host *pHost;
-
-void *Ax_Cli_Thread(void *argu);
-void *Rx_Key_Thread(void *argu);
-void *Rx_Msg_Thread(void *argu);
-
-void Error_Handle();
-
-bool Quit = false;
-
 /* main */
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -458,13 +442,12 @@ int main(int argc, char *argv[])
 
     if (pSocket->Set_Listen() == LISTEN_OK)
     {
-        printf("--- Socket Listening : OK ---\n");
+        printf("Socket Listening : [ OK ]\n");
     }
     else
     {
 
-        printf("--- Socket Listening : Fail ---\n");
-        perror("Error : ");
+        Error_Handle();
         exit(0);
     }
 
@@ -477,11 +460,11 @@ int main(int argc, char *argv[])
         Error_Handle();
 
     if (pthread_join(Rx_Key_Tid, NULL) == 0)
-        printf("!--- Join Rx_Key_Thread : [ OK ] ---!\n");
+        printf("Join Rx_Key_Thread Routine : [ OK ]\n");
     else
-        perror("Error ");
+        Error_Handle();
 
-    printf("!--- Exit The Program ---!\n");
+    printf("Exit The Program\n");
     return 0;
 }
 void *Ax_Cli_Thread(void *argu)
@@ -522,7 +505,6 @@ void *Ax_Cli_Thread(void *argu)
                 }
             }
 
-
             pSocket->Get_Host(i).Set_ClientAddr(Client_Addr);
             pSocket->Get_Host(i).Set_SessionFD(FD);
             pSocket->Get_Host(i).Set_Session(true);
@@ -538,7 +520,7 @@ void *Ax_Cli_Thread(void *argu)
         }
     }
 
-    printf("!--- End of Ax_Cli_Thread---!\n");
+    printf("End of Ax_Cli_Thread Routine\n");
 }
 
 void *Rx_Msg_Thread(void *argu)
@@ -551,7 +533,7 @@ void *Rx_Msg_Thread(void *argu)
     int SessionFD = pSocket->Get_Host(idx).Get_SessionFD();
     char *Address = inet_ntoa(pSocket->Get_Host(idx).Get_ClientAddr().sin_addr);
 
-    printf("Host[%d]'s Session Enabled Un Rx_Msg_Thread\n", idx);
+    printf("Rx_Msg_Thread[%d] Routine Enabled\n", idx);
 
     while (1)
     {
@@ -584,16 +566,16 @@ void *Rx_Msg_Thread(void *argu)
         }
     }
 
-    printf("!--- End of Rx_Msg_Thread[%d] ---!\n", idx);
+    printf("End of Rx_Msg_Thread[%d] Routine\n", idx);
 
-    if( close(SessionFD) == 0 )
-    { 
-        printf("Close Host[%d]'s Session : [ OK ]\n",idx);
+    if (close(SessionFD) == 0)
+    {
+        printf("Close Host[%d]'s Session : [ OK ]\n", idx);
         pSocket->Get_Host(idx).Set_Session(false);
-        pSocket->Set_SessionNum()--; 
+        pSocket->Set_SessionNum()--;
     }
-    else Error_Handle(); 
-
+    else
+        Error_Handle();
 
     delete[] Buffer;
 }
@@ -639,58 +621,61 @@ void *Rx_Key_Thread(void *argu)
 
                     int SessionFD = HostInst.Get_SessionFD();
 
-                   write(SessionFD, Buffer, strlen(Buffer));
+                    write(SessionFD, Buffer, strlen(Buffer));
                 }
             }
 
             if (strcmp("quit", Buffer) == 0)
             {
 
-                printf("!--- You Order Quit ---!\n");
+                printf("You Order Quit\n");
 
                 if (shutdown(SocketFD, SHUT_RD) == -1)
                     perror("Error ");
                 else
                 {
 
-                    printf("!--- Shutdown SocketFD Read Stream : [OK] ---!\n");
+                    printf("Shutdown SocketFD Read Stream : [OK]\n");
 
                     if (pthread_join(Ax_Cli_Tid, NULL) != 0)
                         perror("Error ");
                     else
                     {
 
-                        printf("!--- Join Ax_Cli_Thread : [ OK ] ---!\n");
+                        printf("Join Ax_Cli_Thread Routine : [ OK ]\n");
                         if (close(SocketFD) != 0)
-                            perror("Error ");
+                            Error_Handle();
+
                         else
-                            printf("!--- Close Socket : [ OK ] ---!\n");
+                            printf("Close Socket : [ OK ]\n");
                     }
                 }
 
-                for (int k = 0 ; k < Queue_Size; k++)
+                for (int k = 0; k < Queue_Size; k++)
                 {
 
                     if (pSocket->Get_Host(k).CheckSession())
                     {
                         int SessionFD = pSocket->Get_Host(k).Get_SessionFD();
-                        write(SessionFD, "!--- Server is Shutdown ---!\n", strlen("!--- Server is Shutdown ---!\n"));
+                        write(SessionFD, "--- Server is Shutdown ---\n", strlen("--- Server is Shutdown ---\n"));
 
                         if (shutdown(SessionFD, SHUT_RDWR) == -1)
-                            perror("Error ");
+                            Error_Handle();
+
                         else
                         {
-                            printf("!--- Shutdown Host[%d] Read & Write Stream : [ OK ] ---!\n", k);
+                            printf("Shutdown Host[%d] Read/Write Stream : [ OK ]\n", k);
                             if (pthread_join(pSocket->Get_Host(k).Get_Rx_Msg_Tid(), NULL) != 0)
-                                perror("Error ");
+                                Error_Handle();
                             else
                             {
-                                printf("!--- Join Rx_Msg_Thread[%d] : [ OK ] ---!\n", k);
+                                printf("Join Rx_Msg_Thread[%d] Routine : [ OK ]\n", k);
                                 if (close(SessionFD) != 0)
-                                    perror("Error ");
+                                    Error_Handle();
+
                                 else
                                 {
-                                    printf("!--- Close Host[%d]'s Session : [ OK ] ---!\n", k);
+                                    printf("Close Host[%d]'s Session : [ OK ]\n", k);
                                     pSocket->Get_Host(k).Set_Session(false);
                                     pSocket->Set_SessionNum()--;
                                 }
@@ -713,7 +698,7 @@ void *Rx_Key_Thread(void *argu)
         }
     }
 
-    printf("End of Key_Rx_Thread Routine...\n");
+    printf("End of Key_Rx_Thread Routine\n");
 }
 
 void Error_Handle()
@@ -721,7 +706,7 @@ void Error_Handle()
 
     char *Msg = new char[1024];
     bzero(Msg, 1024);
-    sprintf(Msg, "Error Code < %d > ", errno);
+    sprintf(Msg, "Error No.(%d) ", errno);
     perror(Msg);
     delete[] Msg;
 }
