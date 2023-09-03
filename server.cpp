@@ -13,6 +13,9 @@
 
 using namespace std;
 
+class Socket;
+class Host;
+
 /* Socket Class */
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -22,137 +25,6 @@ using namespace std;
 #define BIND_OK 0
 #define LISTEN_OK 0
 #define ACCEPT_ERROR -1
-
-class Socket
-{
-
-private:
-    struct sockaddr_in Server_Addr;
-    bool Quit_Flag = false;
-    int Port_Number;
-    int Queue_Size;
-    int Bind_State;
-    int SocketFD;
-    int Session_Number = 0;
-
-public:
-    /* --- Constructor --- */
-
-    Socket(const struct sockaddr_in &s, const int &n);
-
-    /* --- Destructor --- */
-    ~Socket();
-
-    /* --- Setter --- */
-
-    int &Set_SessionNum();
-
-    int Set_Listen();
-    void Set_Binding_Flag(int Flag);
-    void Set_Listening_Flag(int Flag);
-
-    /* --- Getter --- */
-
-    int Get_SessionNum();
-
-    int Get_SocketFD();
-    int Get_QueueSize();
-
-    int Get_Binding_Flag();
-    int Get_Listeing_Flag();
-
-    /* --- Generic Method --- */
-};
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Constructor */
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-Socket ::Socket(const struct sockaddr_in &s, const int &n)
-{
-
-    Queue_Size = n;
-    bzero(&Server_Addr, sizeof(Server_Addr));
-
-    Server_Addr.sin_family = s.sin_family;
-    Server_Addr.sin_addr.s_addr = s.sin_addr.s_addr;
-    Server_Addr.sin_port = s.sin_port;
-
-    SocketFD = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (SocketFD == -1)
-    {
-        printf("--- Socket Creation : Fail ---\n");
-        perror("Error : ");
-        exit(0);
-    }
-    else
-    {
-
-        printf("--- Socket Creation : OK ---\n");
-        printf("--- Socket File Descriptor : %d\n", SocketFD);
-
-        int Value = bind(SocketFD, (struct sockaddr *)&Server_Addr, sizeof(Server_Addr));
-
-        if (Value == BIND_OK)
-        {
-            printf("--- Socket Binding : OK ---\n");
-            Bind_State = Value;
-        }
-        else if (Value != BIND_OK)
-        {
-            printf("--- Socket Binding : Fail ---\n");
-            perror("Error : ");
-            Bind_State = Value;
-            exit(0);
-        }
-    }
-}
-
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Destructor */
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-Socket ::~Socket()
-{
-}
-
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Setter */
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-
-int &Socket ::Set_SessionNum()
-{
-
-    return Session_Number;
-}
-
-int Socket ::Set_Listen()
-{
-
-    int state;
-    if (Bind_State == BIND_OK)
-        state = listen(SocketFD, Queue_Size);
-    return state;
-}
-
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-/* Getter */
-/* ------------------------------------------------------------------------------------------------------------------------------------*/
-
-int Socket ::Get_SocketFD()
-{
-
-    return SocketFD;
-}
-int Socket ::Get_QueueSize()
-{
-
-    return Queue_Size;
-}
-
-int Socket ::Get_SessionNum()
-{
-
-    return Session_Number;
-}
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* Generic Method */
@@ -239,7 +111,7 @@ public:
 
 Host ::Host()
 {
-
+    //  cout << "Host Instance [ " << this << " ] is Created " << endl;
     bzero(&Client_Addr, sizeof(Client_Addr));
 }
 
@@ -368,11 +240,179 @@ bool Host ::CheckSession()
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
 /* Global */
 
+class Socket
+{
+
+private:
+    struct sockaddr_in Server_Addr;
+    bool Quit_Flag = false;
+    int Port_Number;
+    int Queue_Size;
+    int Bind_State;
+    int SocketFD;
+    int Session_Number = 0;
+    Host *pHost;
+
+public:
+    /* --- Constructor --- */
+
+    Socket(const struct sockaddr_in &s, const int &n);
+
+    /* --- Destructor --- */
+    ~Socket();
+
+    /* --- Setter --- */
+
+    int &Set_SessionNum();
+
+    int Set_Listen();
+    void Set_Binding_Flag(int Flag);
+    void Set_Listening_Flag(int Flag);
+
+    /* --- Getter --- */
+
+    int Get_SessionNum();
+
+    int Get_SocketFD();
+    int Get_QueueSize();
+
+    int Get_Binding_Flag();
+    int Get_Listeing_Flag();
+
+    Host &Get_Host(int idx);
+
+    /* --- Generic Method --- */
+
+    void PrintSession();
+};
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Constructor */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+Socket ::Socket(const struct sockaddr_in &s, const int &n)
+{
+
+    Queue_Size = n;
+
+    pHost = new Host[Queue_Size];
+
+    bzero(pHost, sizeof(Host) * Queue_Size);
+    bzero(&Server_Addr, sizeof(Server_Addr));
+
+    Server_Addr.sin_family = s.sin_family;
+    Server_Addr.sin_addr.s_addr = s.sin_addr.s_addr;
+    Server_Addr.sin_port = s.sin_port;
+
+    SocketFD = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (SocketFD == -1)
+    {
+        printf("--- Socket Creation : Fail ---\n");
+        perror("Error : ");
+        exit(0);
+    }
+    else
+    {
+
+        printf("--- Socket Creation : OK ---\n");
+        printf("--- Socket File Descriptor : %d\n", SocketFD);
+
+        int Value = bind(SocketFD, (struct sockaddr *)&Server_Addr, sizeof(Server_Addr));
+
+        if (Value == BIND_OK)
+        {
+            printf("--- Socket Binding : OK ---\n");
+            Bind_State = Value;
+        }
+        else if (Value != BIND_OK)
+        {
+            printf("--- Socket Binding : Fail ---\n");
+            perror("Error : ");
+            Bind_State = Value;
+            exit(0);
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Destructor */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+Socket ::~Socket()
+{
+
+    delete[] pHost;
+}
+
+void Socket ::PrintSession()
+{
+
+    for (int i = 0; i < Queue_Size; i++)
+    {
+
+        if (Get_Host(i).CheckSession())
+        {
+
+            int SessionFD = Get_Host(i).Get_SessionFD();
+            char *Addr = inet_ntoa(Get_Host(i).Get_ClientAddr().sin_addr);
+
+            printf("Host[%d] : Enabled\n");
+            printf("`-Cli Addr : %s\n", Addr);
+            printf("`-SessionFD : %d\n", SessionFD);
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Setter */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+
+int &Socket ::Set_SessionNum()
+{
+
+    return Session_Number;
+}
+
+int Socket ::Set_Listen()
+{
+
+    int state;
+    if (Bind_State == BIND_OK)
+        state = listen(SocketFD, Queue_Size);
+    return state;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+/* Getter */
+/* ------------------------------------------------------------------------------------------------------------------------------------*/
+
+int Socket ::Get_SocketFD()
+{
+
+    return SocketFD;
+}
+int Socket ::Get_QueueSize()
+{
+
+    return Queue_Size;
+}
+
+int Socket ::Get_SessionNum()
+{
+
+    return Session_Number;
+}
+
+Host &Socket ::Get_Host(int idx)
+{
+
+    return pHost[idx];
+}
+
 pthread_t Ax_Cli_Tid;
 pthread_t Rx_Key_Tid;
 
 // unique_ptr<class Socket> pSocket;
 // unique_ptr<class Host[]> pHost;
+
 Socket *pSocket;
 Host *pHost;
 
@@ -412,6 +452,7 @@ int main(int argc, char *argv[])
     Server_Addr.sin_port = htons(Port_Num);
 
     pSocket = new Socket(Server_Addr, Queue_Size);
+    // pSocket->CreateHostInstace();
 
     // pSocket.reset(new class Socket(Server_Addr, Queue_Size));
 
@@ -427,8 +468,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    pHost = new Host[Queue_Size];
-
     // pHost.reset(new class Host[Queue_Size]);
 
     if (pthread_create(&Ax_Cli_Tid, NULL, Ax_Cli_Thread, NULL) != 0)
@@ -436,8 +475,6 @@ int main(int argc, char *argv[])
 
     if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) != 0)
         Error_Handle();
-
-  
 
     if (pthread_join(Rx_Key_Tid, NULL) == 0)
         printf("!--- Join Rx_Key_Thread : [ OK ] ---!\n");
@@ -459,7 +496,7 @@ void *Ax_Cli_Thread(void *argu)
         struct sockaddr_in Client_Addr;
         bzero(&Client_Addr, sizeof(Client_Addr));
         int len = sizeof(Client_Addr);
-        
+
         /* Shutdown(SocketFD,SHUT_RD)를 통해 accpet()함수 Abort */
         int FD = accept(SocketFD, (struct sockaddr *)&Client_Addr, (socklen_t *)&len);
 
@@ -477,24 +514,25 @@ void *Ax_Cli_Thread(void *argu)
             for (int k = 0; k < Queue_Size; k++)
             {
 
-                if (!pHost[k].CheckSession())
+                if (!pSocket->Get_Host(k).CheckSession())
                 {
                     printf("Host[%d] : Disabled\n", k);
                     i = k;
                     break;
                 }
             }
-            pHost[i].Set_ClientAddr(Client_Addr);
-            pHost[i].Set_SessionFD(FD);
-            pHost[i].Set_Session(true);
 
+
+            pSocket->Get_Host(i).Set_ClientAddr(Client_Addr);
+            pSocket->Get_Host(i).Set_SessionFD(FD);
+            pSocket->Get_Host(i).Set_Session(true);
             pSocket->Set_SessionNum()++;
 
             printf("!!! --- New Session is Enabled --- !!!\n");
             printf("Session Number : [ %d ] \n", i);
-            printf("Host[%d]'s Client Address : [ %s ]\n", i, inet_ntoa(pHost[i].Get_ClientAddr().sin_addr));
+            printf("Host[%d]'s Client Address : [ %s ]\n", i, inet_ntoa(pSocket->Get_Host(i).Get_ClientAddr().sin_addr));
             printf("Host[%d]'s SessionFD : [ %d ]\n", i, FD);
-            if (pthread_create(pHost[i].Get_Rx_Msg_Tid_Pointer(), NULL, Rx_Msg_Thread, &i) != 0)
+            if (pthread_create(pSocket->Get_Host(i).Get_Rx_Msg_Tid_Pointer(), NULL, Rx_Msg_Thread, &i) != 0)
                 Error_Handle();
         }
     }
@@ -509,8 +547,8 @@ void *Rx_Msg_Thread(void *argu)
     int idx = *(int *)argu;
     char *Buffer = new char[1024];
 
-    int SessionFD = pHost[idx].Get_SessionFD();
-    char *Address = inet_ntoa(pHost[idx].Get_ClientAddr().sin_addr);
+    int SessionFD = pSocket->Get_Host(idx).Get_SessionFD();
+    char *Address = inet_ntoa(pSocket->Get_Host(idx).Get_ClientAddr().sin_addr);
 
     printf("Host[%d]'s Session Enabled Un Rx_Msg_Thread\n", idx);
 
@@ -562,7 +600,7 @@ void *Rx_Key_Thread(void *argu)
     char c;
 
     bzero(Buffer, 1024);
-    getchar(); 
+    getchar();
 
     while (1)
     {
@@ -580,6 +618,19 @@ void *Rx_Key_Thread(void *argu)
             Buffer[--idx] = '\0';
 
             printf("Console : %s\n", Buffer);
+
+            for (int n = 0; n < Queue_Size; n++)
+            {
+
+                if (pSocket->Get_Host(n).CheckSession() == true)
+                {
+                    Host &HostInst = pSocket->Get_Host(n);
+
+                    int SessionFD = HostInst.Get_SessionFD();
+
+                   write(SessionFD, Buffer, strlen(Buffer));
+                }
+            }
 
             if (strcmp("quit", Buffer) == 0)
             {
@@ -606,22 +657,20 @@ void *Rx_Key_Thread(void *argu)
                     }
                 }
 
-                for (int k = 0; k < Queue_Size; k++)
+                for (int k = 0 ; k < Queue_Size; k++)
                 {
 
-                    if (pHost[k].CheckSession())
+                    if (pSocket->Get_Host(k).CheckSession())
                     {
-                        int SessionFD = pHost[k].Get_SessionFD();
+                        int SessionFD = pSocket->Get_Host(k).Get_SessionFD();
+                        write(SessionFD, "!--- Server is Shutdown ---!\n", strlen("!--- Server is Shutdown ---!\n"));
 
-                         write(SessionFD,"!--- Server is Shutdown ---!\n",strlen("!--- Server is Shutdown ---!\n"));
-
-                        
                         if (shutdown(SessionFD, SHUT_RDWR) == -1)
                             perror("Error ");
                         else
                         {
                             printf("!--- Shutdown Host[%d] Read & Write Stream : [ OK ] ---!\n", k);
-                            if (pthread_join(pHost[k].Get_Rx_Msg_Tid(), NULL) != 0)
+                            if (pthread_join(pSocket->Get_Host(k).Get_Rx_Msg_Tid(), NULL) != 0)
                                 perror("Error ");
                             else
                             {
@@ -631,36 +680,22 @@ void *Rx_Key_Thread(void *argu)
                                 else
                                 {
                                     printf("!--- Close Host[%d]'s Session : [ OK ] ---!\n", k);
-                                    pHost[k].Set_Session(false);
-                                    pSocket->Set_SessionNum()--; 
-                                    
+                                    pSocket->Get_Host(k).Set_Session(false);
+                                    pSocket->Set_SessionNum()--;
                                 }
                             }
                         }
                     }
                 }
-                delete[] pHost;
-                delete pSocket; 
 
+                delete pSocket;
                 break;
             }
 
             else if (strcmp("list", Buffer) == 0)
             {
 
-                printf("The Number of Activated Session : %d\n", pSocket->Get_SessionNum());
-                /* Search Enabled Session */
-                for (int i = 0; i < Queue_Size; i++)
-                {
-                    if (pHost[i].CheckSession())
-                    {
-                        char *Addr = inet_ntoa(pHost[i].Get_ClientAddr().sin_addr);
-                        int SessionFD = pHost[i].Get_SessionFD();
-                        printf("Host[%d] : Enabled\n", i);
-                        printf("`-Cli Addr : %s\n", Addr);
-                        printf("`-SessinFD : %d\n", SessionFD);
-                    }
-                }
+                pSocket->PrintSession();
             }
             bzero(Buffer, 1024);
             idx = 0;
