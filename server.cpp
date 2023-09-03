@@ -453,11 +453,13 @@ int main(int argc, char *argv[])
 
     // pHost.reset(new class Host[Queue_Size]);
 
-    if (pthread_create(&Ax_Cli_Tid, NULL, Ax_Cli_Thread, NULL) != 0)
+    if (pthread_create(&Ax_Cli_Tid, NULL, Ax_Cli_Thread, NULL) != 0) printf("Create Ax_Cli_Tid Thread Routine : [ OK ]\n");
         Error_Handle();
 
-    if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) != 0)
+    if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) != 0) printf("Create Rx_Key_Thread Routine : [ OK ]\n"); 
         Error_Handle();
+
+        
 
     if (pthread_join(Rx_Key_Tid, NULL) == 0)
         printf("Join Rx_Key_Thread Routine : [ OK ]\n");
@@ -469,7 +471,7 @@ int main(int argc, char *argv[])
 }
 void *Ax_Cli_Thread(void *argu)
 {
-
+    
     int SocketFD = pSocket->Get_SocketFD();
     int Queue_Size = pSocket->Get_QueueSize();
 
@@ -583,7 +585,9 @@ void *Rx_Msg_Thread(void *argu)
 void *Rx_Key_Thread(void *argu)
 {
 
-    printf("Under Rx_Key_Thread\n");
+    printf("Under Rx_Key_Thread Routine\n");
+
+ 
 
     int Queue_Size = pSocket->Get_QueueSize();
     char Buffer[1024];
@@ -594,6 +598,13 @@ void *Rx_Key_Thread(void *argu)
 
     bzero(Buffer, 1024);
     getchar();
+
+
+    printf("Command list\n");
+    printf("(1).quit\n");
+    printf("`- Quit Both Server and Client Program\n"); 
+    printf("(2).list\n");
+    printf("`- Show The List of Session\n");
 
     while (1)
     {
