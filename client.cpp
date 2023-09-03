@@ -159,6 +159,7 @@ void *Rx_Key_Thread(void *argu)
     int i = 0; 
 
     bzero(Buffer, 1024); 
+    getchar(); 
 
     while (1)
     {
@@ -224,8 +225,17 @@ void *Rx_Msg_Thread(void *argu)
     }
 
   
-    if( close(SocketFD) == 0 ) printf("Close Socket : [ OK ]\n");
+    if( close(SocketFD) == 0 ) 
+    {
+               
+        printf("Close Socket : [ OK ]\n");
+        if( pthread_cancel(Rx_Key_Tid) == 0 )  printf("Cancel Rx_Key_Thread Routine : [ OK ]\n");
+        else Error_Handle(); 
+    
+    }
     else Error_Handle(); 
+
+
     printf("End of Rx_Msg_Thread Routine\n");
 
 

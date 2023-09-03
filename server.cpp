@@ -354,7 +354,7 @@ void Socket ::PrintSession()
             int SessionFD = Get_Host(i).Get_SessionFD();
             char *Addr = inet_ntoa(Get_Host(i).Get_ClientAddr().sin_addr);
 
-            printf("Host[%d] : Enabled\n");
+            printf("Host[%d] : Enabled\n",i);
             printf("`-Cli Addr : %s\n", Addr);
             printf("`-SessionFD : %d\n", SessionFD);
         }
@@ -526,6 +526,7 @@ void *Ax_Cli_Thread(void *argu)
             pSocket->Get_Host(i).Set_ClientAddr(Client_Addr);
             pSocket->Get_Host(i).Set_SessionFD(FD);
             pSocket->Get_Host(i).Set_Session(true);
+
             pSocket->Set_SessionNum()++;
 
             printf("!!! --- New Session is Enabled --- !!!\n");
@@ -584,6 +585,16 @@ void *Rx_Msg_Thread(void *argu)
     }
 
     printf("!--- End of Rx_Msg_Thread[%d] ---!\n", idx);
+
+    if( close(SessionFD) == 0 )
+    { 
+        printf("Close Host[%d]'s Session : [ OK ]\n",idx);
+        pSocket->Get_Host(idx).Set_Session(false);
+        pSocket->Set_SessionNum()--; 
+    }
+    else Error_Handle(); 
+
+
     delete[] Buffer;
 }
 
