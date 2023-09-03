@@ -170,7 +170,7 @@ void *Rx_Key_Thread(void *argu)
         {
 
             Buffer[--i] = '\0';
-            printf("Console : %s\n",Buffer);
+            printf("Client : %s\n",Buffer);
             write(SocketFD,Buffer,strlen(Buffer));
             if( strcmp(Buffer,"quit") == 0 )
             {
