@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
 
     printf("Enter Port Number : ");
     scanf("%d", &Port_Num);
-    printf("Ennter Client Queue Size : ");
+    printf("Enter Client Number : ");
     scanf("%d", &Queue_Size);
 
     bzero(&Server_Addr, sizeof(Server_Addr));

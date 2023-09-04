@@ -36,7 +36,7 @@ ETH ::ETH(char *Address, int Port)
 {
 
     char c;
-    cout << "Construcing Ethernet Instance ---" << endl;
+    cout << "Construcing Instance" << endl;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
