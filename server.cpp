@@ -453,18 +453,17 @@ int main(int argc, char *argv[])
 
     // pHost.reset(new class Host[Queue_Size]);
 
-    if (pthread_create(&Ax_Cli_Tid, NULL, Ax_Cli_Thread, NULL) != 0) printf("Create Ax_Cli_Tid Thread Routine : [ OK ]\n");
-        Error_Handle();
+    if (pthread_create(&Ax_Cli_Tid, NULL, Ax_Cli_Thread, NULL) != 0) Error_Handle();
+    else printf("Create Ax_Cli_Tid Thread Routine : [ OK ]\n");
 
-    if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) != 0) printf("Create Rx_Key_Thread Routine : [ OK ]\n"); 
-        Error_Handle();
+    if (pthread_create(&Rx_Key_Tid, NULL, Rx_Key_Thread, NULL) != 0) Error_Handle();
+    else  printf("Create Rx_Key_Thread Routine : [ OK ]\n"); 
 
         
 
-    if (pthread_join(Rx_Key_Tid, NULL) == 0)
-        printf("Join Rx_Key_Thread Routine : [ OK ]\n");
-    else
-        Error_Handle();
+    if (pthread_join(Rx_Key_Tid, NULL) != 0) Error_Handle();
+    else printf("Join Rx_Key_Thread Routine : [ OK ]\n");
+        
 
     printf("Exit The Program\n");
     return 0;
