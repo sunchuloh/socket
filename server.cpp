@@ -646,7 +646,7 @@ void *Rx_Key_Thread(void *argu)
                 else
                 {
 
-                    printf("Shutdown SocketFD Read Stream : [OK]\n");
+                    printf("Shutdown SocketFD Read Stream : [ OK ]\n");
 
                     if (pthread_join(Ax_Cli_Tid, NULL) != 0)
                         perror("Error ");
@@ -715,9 +715,9 @@ void *Rx_Key_Thread(void *argu)
 void Error_Handle()
 {
 
-    char *Msg = new char[1024];
-    bzero(Msg, 1024);
-    sprintf(Msg, "Error No.(%d) ", errno);
-    perror(Msg);
-    delete[] Msg;
+    char Buffer[1024];
+    bzero(Buffer, 1024);
+    sprintf(Buffer, "Error(%d) : %s", errno, strerror(errno));
+    printf("%s\n",Buffer); 
+   
 }

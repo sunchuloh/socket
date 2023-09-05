@@ -198,7 +198,11 @@ void *Rx_Msg_Thread(void *argu)
     char Buffer[1024];
     char c;
     int SocketFD = pETH->GetSockFD();
-
+    
+    printf("Command list\n");
+    printf("(1).quit\n");
+    printf("`- Quit Client Program\n"); 
+  
     while (1)
     {
 
@@ -235,9 +239,9 @@ void *Rx_Msg_Thread(void *argu)
 void Error_Handle()
 {
 
-    char *Msg = new char[1024];
-    bzero(Msg, 1024);
-    sprintf(Msg, "Error No.(%d) ", errno);
-    perror(Msg);
-    delete[] Msg;
+    char Buffer[1024];
+    bzero(Buffer, 1024);
+    sprintf(Buffer, "Error(%d) : %s", errno, strerror(errno));
+    printf("%s\n",Buffer); 
+   
 }
