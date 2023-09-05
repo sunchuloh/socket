@@ -346,12 +346,13 @@ Socket ::~Socket()
 void Socket ::PrintSession()
 {
 
+    int cnt = 0; 
     for (int i = 0; i < Queue_Size; i++)
     {
 
         if (Get_Host(i).CheckSession())
         {
-
+            cnt++; 
             int SessionFD = Get_Host(i).Get_SessionFD();
             char *Addr = inet_ntoa(Get_Host(i).Get_ClientAddr().sin_addr);
 
@@ -360,6 +361,8 @@ void Socket ::PrintSession()
             printf("`-SessionFD : %d\n", SessionFD);
         }
     }
+    if(cnt == 0)
+    printf("There isn't Any Client Connected\n");
 }
 
 /* ------------------------------------------------------------------------------------------------------------------------------------*/
